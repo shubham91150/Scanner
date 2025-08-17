@@ -1,0 +1,4166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Smart QR Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+ 
+  <!--  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://shubham91150.github.io/Parrent-/;">
+    -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #f5f5f5;
+            --secondary-color: #666666;
+            --background-color: #f5f5f5;
+            --surface-color: #ffffff;
+            --text-color: #333333;
+            --text-secondary: black;
+            --text-tertiary: #999999;
+            --border-color: #e0e0e0;
+            --history-bg: #f5f5f5;
+            --history-border: #666666;
+            --button-hover: #555555;
+            --error-color: #dc2626;
+            --success-color: #22c55e;
+            --border-radius: 20px;
+            --card-border-radius: 12px;
+            --xml-bg: #f5f5f5;
+            --xml-border: #e0e0e0;
+            --xml-tag: #333333;
+            --xml-attr: #666666;
+            --xml-value: #999999;
+        }
+
+        body.theme-dark {
+            --primary-color: #666666;
+            --secondary-color: #666666;
+            --background-color: #1a1a1a;
+            --surface-color: #2a2a2a;
+            --text-color: #f5f5f5;
+            --text-secondary: #999999;
+            --text-tertiary: #666666;
+            --border-color: #444444;
+            --history-bg: #1a1a1a;
+            --history-border: #666666;
+            --button-hover: #777777;
+            --error-color: #ef4444;
+            --success-color: #22c55e;
+            --xml-bg: #1a1a1a;
+            --xml-border: #444444;
+            --xml-tag: #f5f5f5;
+            --xml-attr: #999999;
+            --xml-value: #666666;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--surface-color);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        header {
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0 0 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        h1 i {
+            color: var(--secondary-color);
+        }
+
+        #themeToggle {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--primary-color);
+            color: black;
+            border: none;
+            padding: 8px 1px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 25px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: none ;
+            align-items: center;
+            gap:  6px ;
+        }
+
+        #themeToggle:hover {
+            background: var(--button-hover);
+            color: white;
+            transform: translateY(-50%) translateY(-1px);
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--primary-color);
+            color: black;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .action-button:hover {
+            background-color: var(--button-hover);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .action-button.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        #switchCameraButton {
+            background-color: var(--primary-color );
+            color: black;
+        }
+
+        #switchCameraButton.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .reader-container {
+            max-width: 100%;
+            margin: 0 auto;
+            border-radius: var(--card-border-radius);
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            position: relative;
+            background: var(--surface-color);
+            min-height: 300px;
+        }
+
+        .results-container {
+            margin: 0;
+            padding: 20px;
+            background-color: var(--history-bg);
+            border-radius: var(--card-border-radius);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        #result-content {
+            margin-bottom: 15px;
+            word-break: break-all;
+            color: var(--text-color);
+        }
+
+        .format-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            background-color: var(--secondary-color);
+            color: white;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .smart-action-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+            background-color: var(--secondary-color);
+            transition: all 0.2s ease;
+            margin: 4px;
+        }
+
+        .smart-action-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .smart-action-button i {
+            font-size: 14px;
+        }
+
+        .xml-container {
+            background-color: var(--xml-bg);
+            border: 1px solid var(--xml-border);
+            border-radius: var(--card-border-radius);
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            text-align: left;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .xml-tag {
+            color: var(--xml-tag);
+            font-weight: bold;
+        }
+
+        .xml-attr {
+            color: var(--xml-attr);
+        }
+
+        .xml-value {
+            color: var(--xml-value);
+        }
+
+        .xml-text {
+            color: var(--text-color);
+        }
+
+        .xml-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .xml-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .xml-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .xml-action-btn {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: var(--secondary-color);
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .xml-action-btn:hover {
+            opacity: 0.8;
+        }
+
+        .history-section {
+            margin-top: 0;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .history-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-icon-btn {
+            background: none;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            color: var(--text-secondary);
+        }
+
+        .history-icon-btn:hover {
+            background-color: var(--border-color);
+            color: var(--text-color);
+            transform: translateY(-1px);
+        }
+
+        .history-icon-btn.search-btn {
+            color: var(--secondary-color);
+        }
+
+        .history-icon-btn.filter-btn {
+            color: var(--secondary-color);
+        }
+
+        .history-icon-btn.filter-btn.active {
+            color: #22c55e;
+            background-color: rgba(34, 197, 94, 0.1);
+        }
+
+        .history-icon-btn.clear-btn {
+            color: var(--error-color);
+        }
+
+        .expand-collapse-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            background: var(--history-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--card-border-radius);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-top: 15px;
+        }
+
+        .expand-collapse-btn:hover {
+            background: var(--surface-color);
+            color: var(--text-color);
+            border-color: var(--secondary-color);
+        }
+
+        .expand-collapse-btn i {
+            transition: transform 0.2s ease;
+        }
+
+        .expand-collapse-btn.expanded i {
+            transform: rotate(180deg);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--surface-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: var(--text-color);
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal-btn.primary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .modal-btn.primary:hover {
+            background: var(--button-hover);
+            transform: translateY(-1px);
+        }
+
+        .modal-btn.secondary {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .modal-btn.secondary:hover {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .modal-btn.danger {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .modal-btn.danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        /* Search Box Styles */
+        .search-box-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 500px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .search-box-container.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .search-box {
+            background: var(--surface-color);
+            border-radius: 25px;
+            padding: 15px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: none;
+            color: var(--text-color);
+            font-size: 16px;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-box-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .search-box-close:hover {
+            color: var(--text-color);
+            background: var(--border-color);
+        }
+
+        /* Filter Modal Specific Styles */
+        .filter-modal-content {
+            max-width: 600px;
+        }
+
+        .filter-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .filter-select, .filter-input {
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--background-color);
+            color: var(--text-color);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .filter-select:focus, .filter-input:focus {
+            border-color: var(--secondary-color);
+            background: var(--surface-color);
+        }
+
+        .date-range-group {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-separator {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .history-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clear-button {
+            background: none;
+            border: none;
+            color: var(--error-color);
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .clear-button:hover {
+            background-color: rgba(220, 38, 38, 0.1);
+        }
+
+        .history-item {
+            padding: 16px;
+            margin: 10px 0;
+            background-color: var(--history-bg);
+            border-radius: var(--card-border-radius);
+            border-left: 3px solid var(--history-border);
+            animation: fadeIn 0.3s ease-out;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        /* This media query prevents the "sticky hover" issue on touch devices */
+        @media (hover: hover) and (pointer: fine) {
+            .history-item:hover {
+                background-color: var(--surface-color);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        .history-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .history-item-badges {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 1;
+            transition: opacity 0.2s ease;
+            pointer-events: auto;
+        }
+
+        .history-action-btn {
+            background: none;
+            border: none;
+            padding: 6px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .history-action-btn:hover {
+            background-color: var(--border-color);
+            transform: scale(1.1);
+        }
+
+        .history-action-btn.share-btn {
+            color: var(--secondary-color);
+        }
+
+        .history-action-btn.delete-btn {
+            color: var(--error-color);
+        }
+
+        .history-action-btn.share-btn:hover {
+            background-color: rgba(102, 102, 102, 0.1);
+        }
+
+        .history-action-btn.delete-btn:hover {
+            background-color: rgba(220, 38, 38, 0.1);
+        }
+
+        .history-item .content {
+            margin-bottom: 8px;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            font-size: 14px;
+        }
+
+        .history-item .type-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: 500;
+        }
+
+        .history-item .timestamp {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .empty-history {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 20px;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: var(--card-border-radius);
+            background-color: var(--success-color);
+            font-size: 15px;
+            font-family: sans-serif;
+            color: white;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .notification.error {
+            background-color: var(--error-color);
+        }
+
+        .notification.warning {
+            background-color: #f59e0b;
+        }
+
+        .notification.info {
+            background-color: var(--secondary-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .processing-indicator {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        .processing-indicator i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+            color: var(--secondary-color);
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .encrypted-container {
+            background: var(--primary-color);
+            border-radius: var(--card-border-radius);
+            padding: 20px;
+            margin: 10px 0;
+            color: black;
+            text-align: center;
+        }
+
+        .encrypted-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: black;
+        }
+
+        .encrypted-info {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .password-input-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: stretch;
+            flex-wrap: wrap;
+        }
+
+        .password-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .password-input::placeholder {
+            color: rgba(0, 0, 0, 1);
+
+        }
+
+        .password-input:focus {
+            border-color: white;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .decrypt-button {
+            padding: 12px 24px;
+            background: white;
+            color: var(--text-color);
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .decrypt-button:hover {
+            background: #f0f0f0;
+            transform: translateY(-1px);
+        }
+
+        .decrypt-button:disabled {
+            background: #666;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 520px) {
+            .password-input-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .password-input {
+                min-width: auto;
+                margin-bottom: 10px;
+            }
+            
+            .decrypt-button {
+                justify-content: center;
+            }
+        }
+
+        .decrypted-content {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .decryption-error {
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            color: red;
+            text-align: center;
+        }
+       
+       
+        /* Enhanced Zoom Controls */
+        .zoom-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px 20px;
+            background: var(--history-bg);
+            border-radius: var(--card-border-radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .zoom-container label {
+            font-size: 14px;
+            color: var(--text-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .zoom-container label i {
+            color: var(--secondary-color);
+            font-size: 16px;
+        }
+
+        #zoomSlider {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 6px;
+            outline: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        #zoomSlider:hover {
+            background: var(--text-secondary);
+        }
+
+        #zoomSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+
+        #zoomSlider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        #zoomSlider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        #zoomSlider::-moz-range-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        #zoomValue {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            background: var(--surface-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 2px solid var(--secondary-color);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .zoom-reset-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .zoom-reset-btn:hover {
+            background: var(--button-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Video element scaling for zoom */
+        #qr-reader video {
+            transition: transform 0.3s ease;
+            transform-origin: center center;
+        }
+
+        .smart-action-button.copied {
+            background-color: var(--success-color);
+        }
+
+        .smart-action-button.copied i {
+            margin-right: 5px;
+        }
+
+        .low-light-warning {
+            padding: 12px 15px;
+            background-color: #f59e0b;
+            color: white;
+            border-radius: var(--card-border-radius);
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .button-container {
+                gap: 10px;
+            }
+            
+            .action-button {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-width: 100px;
+            }
+            
+            .history-item {
+                padding: 12px;
+            }
+
+            #themeToggle {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+
+            .zoom-container {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .zoom-container label {
+                justify-content: center;
+            }
+
+            #zoomValue {
+                align-self: center;
+            }
+        }
+
+        @media (min-width: 600px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <header>
+                <h1><i class="fas fa-qrcode"></i> Smart QR Scanner</h1>
+                <button id="themeToggle" class="action-button">
+                    <i class="fas fa-moon"></i>
+                    <span>डार्क</span>
+                </button>
+            </header>
+
+            <div class="button-container">
+                <button id="startButton" class="action-button">
+                    <i class="fas fa-camera"></i>
+                    <span>Scan</span>
+                </button>
+                <button id="switchCameraButton" class="action-button">
+                    <i class="fas fa-sync"></i>
+                    <span>Switch</span>
+                </button>
+                <button id="flashLightButton" class="action-button">
+                    <i class="fas fa-bolt"></i>
+                    <span>Flash</span>
+                </button>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                <button id="fileButton" class="action-button">
+                    <i class="fas fa-image"></i>
+                    <span>Upload</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div id="qr-reader" class="reader-container"></div>
+            
+            <div id="zoomControls" class="zoom-container" style="display: none;">
+                <label for="zoomSlider">
+                    <i class="fas fa-search-plus"></i>
+                    <span>Zoom:</span>
+                </label>
+                <input type="range" id="zoomSlider" min="1" max="3" value="1" step="0.1">
+                <span id="zoomValue">1.0x</span>
+                <button id="zoomReset" class="zoom-reset-btn">
+                    <i class="fas fa-undo"></i>
+                    Reset
+                </button>
+            </div>
+            
+            <div id="lowLightWarning" class="low-light-warning" style="display: none;">
+                <i class="fas fa-lightbulb"></i>
+                <span>कम रोशनी का पता चला। बेहतर स्कैन के लिए फ्लैश चालू करें।</span>
+            </div>
+            
+            <div id="qr-reader-results" class="results-container" style="display: none;">
+                <div id="result-content"></div>
+                <div id="action-buttons" class="action-buttons-container"></div>
+            </div>
+        </div>
+
+        <div class="card history-section">
+            <div class="history-header">
+                <h3><i class="fas fa-history"></i> Recent Scans</h3>
+                <div class="history-actions">
+                    <button id="searchBtn" class="history-icon-btn search-btn" title="Search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button id="filterBtn" class="history-icon-btn filter-btn" title="Filters">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <button id="clearHistoryBtn" class="history-icon-btn clear-btn" title="Clear History">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="scan-history"></div>
+            <button id="expandCollapseBtn" class="expand-collapse-btn" style="display: none;">
+                <span id="expandCollapseText">Show All Scans</span>
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+
+        <!-- Search Box -->
+        <div id="searchBox" class="search-box-container">
+            <div class="search-box">
+                <i class="fas fa-search" style="color: var(--secondary-color);"></i>
+                <input type="text" id="searchInput" placeholder="Search scans by content...">
+                <button id="searchBoxClose" class="search-box-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Modal -->
+        <div id="filterModal" class="modal-overlay">
+            <div class="modal-content filter-modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i class="fas fa-filter"></i>
+                        Filter Scans
+                    </h3>
+                    <button class="modal-close" onclick="scanner.closeFilterModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="filter-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Content Type</label>
+                            <select id="typeFilter" class="filter-select">
+                                <option value="">All Types</option>
+                                <option value="url">URL</option>
+                                <option value="email">Email</option>
+                                <option value="phone">Phone</option>
+                                <option value="wifi">WiFi</option>
+                                <option value="geo">Location</option>
+                                <option value="sms">SMS</option>
+                                <option value="text">Text</option>
+                                <option value="encrypted">Encrypted</option>
+                                <option value="xml">XML</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">Format Type</label>
+                            <select id="formatFilter" class="filter-select">
+                                <option value="">All Formats</option>
+                                <option value="QR_CODE">QR Code</option>
+                                <option value="AZTEC">Aztec</option>
+                                <option value="CODE_128">Code 128</option>
+                                <option value="CODE_39">Code 39</option>
+                                <option value="EAN_13">EAN 13</option>
+                                <option value="UPC_A">UPC A</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">Date Range</label>
+                            <div class="date-range-group">
+                                <input type="date" id="dateFromFilter" class="filter-input">
+                                <span class="date-separator">to</span>
+                                <input type="date" id="dateToFilter" class="filter-input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn secondary" onclick="scanner.resetAllFilters()">
+                        <i class="fas fa-undo"></i>
+                        Reset
+                    </button>
+                    <button class="modal-btn secondary" onclick="scanner.closeFilterModal()">
+                        Cancel
+                    </button>
+                    <button class="modal-btn primary" onclick="scanner.applyFiltersAndClose()">
+                        <i class="fas fa-check"></i>
+                        Apply
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clear Confirmation Modal -->
+        <div id="clearModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--error-color);"></i>
+                        Clear All Scan History
+                    </h3>
+                    <button class="modal-close" onclick="scanner.closeClearModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                        Are you sure you want to delete all scan history? This action cannot be undone.
+                    </p>
+                    <div style="margin-top: 15px; padding: 15px; background: var(--history-bg); border-radius: 8px; border-left: 4px solid var(--error-color);">
+                        <strong style="color: var(--text-color); display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--error-color);"></i>
+                            Warning:
+                        </strong>
+                        <span style="color: var(--text-secondary); font-size: 14px;">
+                            All <span id="historyCount">0</span> scanned items will be permanently deleted.
+                        </span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn secondary" onclick="scanner.closeClearModal()">
+                        Cancel
+                    </button>
+                    <button class="modal-btn danger" onclick="scanner.confirmClearHistory()">
+                        <i class="fas fa-trash"></i>
+                        Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+const CONFIG = {
+    SCANNER: {
+        FPS: 30,
+        QR_BOX_SIZE: 350,
+        MAX_FILE_SIZE: 10 * 1024 * 1024,
+        LOW_LIGHT_THRESHOLD: 50,
+        ZOOM_STEP: 0.1,
+        MAX_ZOOM: 3.0,
+        MIN_ZOOM: 1.0
+    },
+    HISTORY: {
+        MAX_ITEMS: 50,
+        STORAGE_KEY: 'qrScanHistory'
+    },
+    THEME: {
+        STORAGE_KEY: 'qrScannerTheme',
+        DEFAULT: 'light'
+    },
+    ALLOWED_FILE_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp', 'image/gif']
+};
+
+class QRScannerState {
+    constructor() {
+        this.html5QrCode = null;
+        this.zxingReader = null;
+        this.scanning = false;
+        this.flashOn = false;
+        this.history = [];
+        this.currentTheme = CONFIG.THEME.DEFAULT;
+        this.currentCamera = 'environment';
+        this.currentZoom = 1.0;
+        this.videoTrack = null;
+        this.brightnessMonitorInterval = null;
+        this.usingCSSZoom = false;
+        this.filteredHistory = [];
+        this.currentFilters = {
+            search: '',
+            type: '',
+            format: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+        this.showAllHistory = false;
+
+        this.localStorageAvailable = this.checkLocalStorage();
+        
+        this.loadHistory();
+        this.loadTheme();
+        this.initializeZXing();
+    }
+    
+    checkLocalStorage() {
+        try {
+            const test = '__localStorage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch (error) {
+            console.warn('localStorage not available:', error.message);
+            return false;
+        }
+    }
+    
+    setLocalStorage(key, value) {
+        if (!this.localStorageAvailable) return false;
+        try {
+            localStorage.setItem(key, value);
+            return true;
+        } catch (error) {
+            console.warn('Failed to save to localStorage:', error.message);
+            return false;
+        }
+    }
+    
+    getLocalStorage(key) {
+        if (!this.localStorageAvailable) return null;
+        try {
+            return localStorage.getItem(key);
+        } catch (error) {
+            console.warn('Failed to read from localStorage:', error.message);
+            return null;
+        }
+    }
+    
+    removeLocalStorage(key) {
+        if (!this.localStorageAvailable) return false;
+        try {
+            localStorage.removeItem(key);
+            return true;
+        } catch (error) {
+            console.warn('Failed to remove from localStorage:', error.message);
+            return false;
+        }
+    }
+    
+    initializeZXing() {
+        try {
+            if (typeof ZXing !== 'undefined' && ZXing.BrowserMultiFormatReader) {
+                this.zxingReader = new ZXing.BrowserMultiFormatReader();
+                console.log('ZXing initialized');
+            }
+        } catch (error) {
+            console.log('ZXing not available');
+        }
+    }
+
+    async scanWithZXing(imageFile) {
+        if (!this.zxingReader) {
+            throw new Error('ZXing not available');
+        }
+
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = async () => {
+                try {
+                    const result = await this.zxingReader.decodeFromImageElement(img);
+                    resolve(result.getText());
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            img.onerror = () => reject(new Error('Image load failed'));
+            img.src = URL.createObjectURL(imageFile);
+        });
+    }
+
+    loadTheme() {
+        try {
+            this.currentTheme = this.getLocalStorage(CONFIG.THEME.STORAGE_KEY) || CONFIG.THEME.DEFAULT;
+            this.applyTheme(this.currentTheme);
+        } catch (error) {
+            this.currentTheme = CONFIG.THEME.DEFAULT;
+        }
+    }
+    
+    toggleTheme() {
+        const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        this.applyTheme(newTheme);
+        this.currentTheme = newTheme;
+        this.setLocalStorage(CONFIG.THEME.STORAGE_KEY, newTheme);
+    }
+    
+    applyTheme(theme) {
+        document.body.classList.remove('theme-light', 'theme-dark');
+        document.body.classList.add(`theme-${theme}`);
+        
+        const themeButton = document.getElementById('themeToggle');
+        if (themeButton) {
+            themeButton.innerHTML = theme === 'light' 
+                ? '<i class="fas fa-moon"></i>' 
+                : '<i class="fas fa-sun"></i>' 
+        }
+    }
+    
+    loadHistory() {
+        try {
+            this.history = JSON.parse(localStorage.getItem(CONFIG.HISTORY.STORAGE_KEY)) || [];
+        } catch (error) {
+            this.history = [];
+        }
+    }
+
+    saveHistory() {
+        try {
+            localStorage.setItem(CONFIG.HISTORY.STORAGE_KEY, JSON.stringify(this.history));
+        } catch (error) {
+            this.showNotification('Failed to save history', 'error');
+        }
+    }
+
+    addToHistory(text, type, format = 'QR_CODE') {
+        this.history.unshift({
+            text,
+            type,
+            format,
+            timestamp: new Date().toISOString()
+        });
+        if (this.history.length > CONFIG.HISTORY.MAX_ITEMS) {
+            this.history.pop();
+        }
+        this.saveHistory();
+        this.updateHistoryDisplay();
+    }
+
+    clearHistory() {
+        this.history = [];
+        localStorage.removeItem(CONFIG.HISTORY.STORAGE_KEY);
+        this.updateHistoryDisplay();
+        this.showNotification('History cleared', 'success');
+    }
+
+    showNotification(message, type = 'success', duration = 3000) {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, duration);
+        }, 100);
+    }
+
+    async initializeScanner() {
+        try {
+            this.html5QrCode = new Html5Qrcode("qr-reader");
+            await this.checkPermissions();
+        } catch (error) {
+            this.showNotification('Failed to initialize scanner: ' + error.message, 'error');
+            throw error;
+        }
+    }
+
+    async checkPermissions() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            stream.getTracks().forEach(track => track.stop());
+        } catch (error) {
+            throw new Error('Camera permission denied');
+        }
+    }
+
+    async startScanning() {
+        if (!this.html5QrCode) {
+            await this.initializeScanner();
+        }
+
+        document.querySelector('.card:nth-child(2)').style.transform = 'scale(0.95)';
+        document.querySelector('.card:nth-child(2)').style.opacity = '0.7';
+
+        try {
+            const videoConstraints = {
+                facingMode: this.currentCamera,
+                width: { ideal: 1920, min: 640 },
+                height: { ideal: 1080, min: 480 }
+            };
+
+            const config = {
+                fps: CONFIG.SCANNER.FPS,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    const minEdgePercentage = 0.6;
+                    const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+                    const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+                    return {
+                        width: qrboxSize,
+                        height: qrboxSize
+                    };
+                },
+                aspectRatio: 1.0,
+                disableFlip: false,
+                videoConstraints: videoConstraints,
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.QR_CODE,
+                    Html5QrcodeSupportedFormats.AZTEC,
+                    Html5QrcodeSupportedFormats.CODABAR,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.CODE_93,
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.DATA_MATRIX,
+                    Html5QrcodeSupportedFormats.MAXICODE,
+                    Html5QrcodeSupportedFormats.ITF,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.PDF_417,
+                    Html5QrcodeSupportedFormats.RSS_14,
+                    Html5QrcodeSupportedFormats.RSS_EXPANDED,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E,
+                    Html5QrcodeSupportedFormats.UPC_EAN_EXTENSION
+                ]
+            };
+
+            await this.html5QrCode.start(
+                videoConstraints,
+                config,
+                this.handleScanSuccess.bind(this),
+                this.handleScanError.bind(this)
+            );
+
+            this.addScanningOverlay();
+            this.scanning = true;
+            this.updateScanButton(true);
+            
+            const videoElement = document.querySelector('#qr-reader video');
+            if (videoElement && videoElement.srcObject) {
+                this.videoTrack = videoElement.srcObject.getVideoTracks()[0];
+                this.setupZoomControl();
+                this.startBrightnessMonitor();
+            }
+
+            document.querySelector('.card:nth-child(2)').style.transform = 'scale(1)';
+            document.querySelector('.card:nth-child(2)').style.opacity = '1';
+            
+        } catch (error) {
+            try {
+                const simpleConfig = {
+                    fps: CONFIG.SCANNER.FPS,
+                    qrbox: { 
+                        width: CONFIG.SCANNER.QR_BOX_SIZE, 
+                        height: CONFIG.SCANNER.QR_BOX_SIZE 
+                    }
+                };
+
+                await this.html5QrCode.start(
+                    { facingMode: this.currentCamera },
+                    simpleConfig,
+                    this.handleScanSuccess.bind(this),
+                    this.handleScanError.bind(this)
+                );
+
+                this.addScanningOverlay();
+                this.scanning = true;
+                this.updateScanButton(true);
+
+                const videoElement = document.querySelector('#qr-reader video');
+                if (videoElement && videoElement.srcObject) {
+                    this.videoTrack = videoElement.srcObject.getVideoTracks()[0];
+                    this.setupZoomControl();
+                    this.startBrightnessMonitor();
+                }
+
+                document.querySelector('.card:nth-child(2)').style.transform = 'scale(1)';
+                document.querySelector('.card:nth-child(2)').style.opacity = '1';
+                
+            } catch (fallbackError) {
+                this.showNotification('Failed to start scanner: ' + fallbackError.message, 'error');
+                document.querySelector('.card:nth-child(2)').style.transform = 'scale(1)';
+                document.querySelector('.card:nth-child(2)').style.opacity = '1';
+            }
+        }
+    }
+
+    async stopScanning() {
+        if (this.html5QrCode && this.scanning) {
+            try {
+                await this.html5QrCode.stop();
+                this.scanning = false;
+                this.updateScanButton(false);
+                
+                const overlay = document.getElementById('scanning-overlay');
+                if (overlay) overlay.remove();
+                
+                if (this.flashOn) {
+                    await this.toggleFlash(false);
+                }
+                this.hideZoomControl();
+                this.stopBrightnessMonitor();
+                this.hideLowLightWarning();
+                this.videoTrack = null;
+                this.currentZoom = 1.0;
+                this.usingCSSZoom = false;
+            } catch (error) {
+                this.showNotification('Failed to stop scanner: ' + error.message, 'error');
+            }
+        }
+    }
+
+    updateScanButton(scanning) {
+        const startButton = document.getElementById('startButton');
+        if (startButton) {
+            startButton.innerHTML = scanning ? 
+                '<i class="fas fa-stop"></i><span>Stop</span>' : 
+                '<i class="fas fa-camera"></i><span>Scan</span>';
+            startButton.classList.toggle('active', scanning);
+        }
+    }
+
+    async toggleFlash(force = null) {
+        if (!this.html5QrCode || !this.scanning || !this.videoTrack) {
+            this.showNotification('Scanner must be active to use flash', 'error');
+            return;
+        }
+        
+        try {
+            const capabilities = this.videoTrack.getCapabilities();
+            if (!capabilities || !capabilities.torch) {
+                throw new Error('Flash not supported on this device');
+            }
+            
+            const newState = force !== null ? force : !this.flashOn;
+            await this.videoTrack.applyConstraints({ advanced: [{ torch: newState }] });
+            
+            this.flashOn = newState;
+            
+            const flashButton = document.getElementById('flashLightButton');
+            if (flashButton) {
+                flashButton.innerHTML = this.flashOn ? 
+                    '<i class="fas fa-bolt"></i><span>Off</span>' : 
+                    '<i class="fas fa-bolt"></i><span>On</span>';
+                flashButton.classList.toggle('active', this.flashOn);
+            }
+            
+            this.showNotification(this.flashOn ? 'Flash turned on' : 'Flash turned off', 'success');
+            
+        } catch (error) {
+            this.showNotification('Flash control not available on this device', 'error');
+        }
+    }
+
+    async switchCamera() {
+        if (!this.scanning) {
+            this.showNotification('Start scanning first to switch camera', 'info');
+            return;
+        }
+        
+        try {
+            await this.html5QrCode.stop();
+            this.hideZoomControl();
+            this.stopBrightnessMonitor();
+            this.hideLowLightWarning();
+            
+            this.currentCamera = this.currentCamera === 'environment' ? 'user' : 'environment';
+            this.currentZoom = 1.0;
+            this.usingCSSZoom = false;
+
+            const videoConstraints = {
+                facingMode: this.currentCamera,
+                width: { ideal: 1920, min: 640 },
+                height: { ideal: 1080, min: 480 }
+            };
+
+            const config = {
+                fps: CONFIG.SCANNER.FPS,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    const minEdgePercentage = 0.6;
+                    const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+                    const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+                    return {
+                        width: qrboxSize,
+                        height: qrboxSize
+                    };
+                },
+                aspectRatio: 1.0,
+                disableFlip: false,
+                videoConstraints: videoConstraints
+            };
+            
+            await this.html5QrCode.start(
+                videoConstraints,
+                config,
+                this.handleScanSuccess.bind(this),
+                this.handleScanError.bind(this)
+            );
+            
+            this.addScanningOverlay();
+            
+            const videoElement = document.querySelector('#qr-reader video');
+            if (videoElement && videoElement.srcObject) {
+                this.videoTrack = videoElement.srcObject.getVideoTracks()[0];
+                this.setupZoomControl();
+                this.startBrightnessMonitor();
+            }
+
+            this.showNotification(
+                this.currentCamera === 'environment' ? 'Back camera active' : 'Front camera active', 
+                'success'
+            );
+        } catch (error) {
+            try {
+                const config = {
+                    fps: CONFIG.SCANNER.FPS,
+                    qrbox: { 
+                        width: CONFIG.SCANNER.QR_BOX_SIZE, 
+                        height: CONFIG.SCANNER.QR_BOX_SIZE 
+                    }
+                };
+                
+                await this.html5QrCode.start(
+                    { facingMode: this.currentCamera },
+                    config,
+                    this.handleScanSuccess.bind(this),
+                    this.handleScanError.bind(this)
+                );
+                
+                this.addScanningOverlay();
+
+                const videoElement = document.querySelector('#qr-reader video');
+                if (videoElement && videoElement.srcObject) {
+                    this.videoTrack = videoElement.srcObject.getVideoTracks()[0];
+                    this.setupZoomControl();
+                    this.startBrightnessMonitor();
+                }
+                
+                this.showNotification(
+                    this.currentCamera === 'environment' ? 'Back camera active' : 'Front camera active', 
+                    'success'
+                );
+            } catch (fallbackError) {
+                this.showNotification('Error switching camera: ' + fallbackError.message, 'error');
+            }
+        }
+    }
+
+    async handleScanSuccess(decodedText, decodedResult) {
+        const contentType = this.detectContentType(decodedText);
+        const format = this.getCodeFormat(decodedResult);
+        
+        this.addToHistory(decodedText, contentType, format);
+        this.displayResult(decodedText, contentType, format);
+        this.playSuccessSound();
+        
+        if ('vibrate' in navigator) {
+            navigator.vibrate(100);
+        }
+        
+        await this.stopScanning();
+    }
+
+    handleScanError(error) {
+        // Silent error handling
+    }
+
+    getCodeFormat(decodedResult) {
+        if (!decodedResult || !decodedResult.result || !decodedResult.result.format) {
+            return 'QR_CODE';
+        }
+        return decodedResult.result.format.formatName || 'QR_CODE';
+    }
+
+    detectContentType(content) {
+        if (!content) return 'unknown';
+        
+        if (content.includes('ENCRYPTED QR CODE') || 
+            content.includes('password-protected data') || 
+            content.includes('Technical Data:') ||
+            /U2FsdGVkX1/.test(content)) {
+            return 'encrypted';
+        }
+        
+        const patterns = {
+            url: /^https?:\/\//i,
+            email: /^mailto:|^[^@]+@[^.]+\.[a-z]{2,}$/i,
+            phone: /^tel:|^\\+?[\d\s-]{6,}$/,
+            wifi: /^WIFI:(?:T:|S:|P:|H:)/i,
+            geo: /^geo:([-?\d.]+),([-?\d.]+)/i,
+            sms: /^sms:/i,
+            xml: /^<\?xml|^<[^>]+>/i
+        };
+
+        for (const [type, pattern] of Object.entries(patterns)) {
+            if (pattern.test(content)) return type;
+        }
+
+        return 'text';
+    }
+
+    // Malicious URL Detection System
+    detectMaliciousURL(url) {
+        if (!url || typeof url !== 'string') return { isMalicious: false };
+
+        const result = {
+            isMalicious: false,
+            reasons: [],
+            riskLevel: 'low' // low, medium, high, critical
+        };
+
+        // Known malicious domains (sample list)
+        const maliciousDomains = [
+            'bit.ly/malware',
+            'tinyurl.com/virus',
+            'phishing-site.com',
+            'fake-bank.net',
+            'malware-download.org',
+            'scam-alert.info',
+            'virus-infected.com',
+            'phishing-attempt.net',
+            'fake-security.org',
+            'malicious-redirect.com',
+            'trojan-horse.net',
+            'spyware-download.info',
+            'ransomware-site.org',
+            'keylogger-install.com',
+            'backdoor-access.net'
+        ];
+
+        // Suspicious TLDs
+        const suspiciousTLDs = [
+            '.tk', '.ml', '.ga', '.cf', '.gq', '.top', '.click', '.download',
+            '.work', '.party', '.racing', '.review', '.stream', '.science',
+            '.cricket', '.accountant', '.loan', '.win', '.faith', '.trade'
+        ];
+
+        // URL shortener services (can hide malicious URLs)
+        const urlShorteners = [
+            'bit.ly', 'tinyurl.com', 'goo.gl', 't.co', 'ow.ly', 'is.gd',
+            'buff.ly', 'adf.ly', 'bl.ink', 'cutt.ly', 'short.link', 'tiny.cc',
+            'rb.gy', 'clicky.me', 'vo.la', '2.gp', 'bc.vc', 'chilp.it'
+        ];
+
+        // Phishing keywords
+        const phishingKeywords = [
+            'verify-account', 'suspend-account', 'update-payment', 'confirm-identity',
+            'urgent-action', 'click-here-now', 'free-money', 'winner-selected',
+            'claim-prize', 'security-alert', 'account-locked', 'immediate-response',
+            'validate-info', 'emergency-access', 'limited-time', 'expire-soon',
+            'paypal-security', 'amazon-security', 'google-verify', 'microsoft-alert',
+            'bank-notification', 'tax-refund', 'inheritance-money', 'lottery-winner'
+        ];
+
+        // Suspicious file extensions in URLs
+        const maliciousExtensions = [
+            '.exe', '.scr', '.bat', '.cmd', '.com', '.pif', '.vbs', '.js',
+            '.jar', '.app', '.deb', '.rpm', '.dmg', '.pkg', '.msi', '.apk'
+        ];
+
+        try {
+            const urlObj = new URL(url.toLowerCase());
+            const domain = urlObj.hostname;
+            const path = urlObj.pathname.toLowerCase();
+            const fullUrl = url.toLowerCase();
+
+            // 1. Check against known malicious domains
+            if (maliciousDomains.some(malDomain => domain.includes(malDomain))) {
+                result.isMalicious = true;
+                result.reasons.push('Known malicious domain detected');
+                result.riskLevel = 'critical';
+            }
+
+            // 2. Check for IP addresses instead of domains
+            const ipPattern = /^https?:\/\/(\d{1,3}\.){3}\d{1,3}/;
+            if (ipPattern.test(url)) {
+                result.isMalicious = true;
+                result.reasons.push('Direct IP address used instead of domain name');
+                result.riskLevel = result.riskLevel === 'critical' ? 'critical' : 'high';
+            }
+
+            // 3. Check for suspicious TLDs
+            if (suspiciousTLDs.some(tld => domain.endsWith(tld))) {
+                result.isMalicious = true;
+                result.reasons.push('Suspicious top-level domain (TLD)');
+                result.riskLevel = result.riskLevel === 'critical' ? 'critical' : 'medium';
+            }
+
+            // 4. Check for URL shorteners
+            if (urlShorteners.some(shortener => domain.includes(shortener))) {
+                result.isMalicious = true;
+                result.reasons.push('URL shortener detected (may hide malicious content)');
+                result.riskLevel = result.riskLevel === 'critical' ? 'critical' : 'medium';
+            }
+
+            // 5. Check for phishing keywords
+            const foundPhishingKeywords = phishingKeywords.filter(keyword => 
+                fullUrl.includes(keyword) || path.includes(keyword)
+            );
+            if (foundPhishingKeywords.length > 0) {
+                result.isMalicious = true;
+                result.reasons.push(`Phishing keywords detected: ${foundPhishingKeywords.join(', ')}`);
+                result.riskLevel = result.riskLevel === 'critical' ? 'critical' : 'high';
+            }
+
+            // 6. Check for suspicious file extensions
+            const foundMaliciousExt = maliciousExtensions.find(ext => path.endsWith(ext));
+            if (foundMaliciousExt) {
+                result.isMalicious = true;
+                result.reasons.push(`Suspicious file extension detected: ${foundMaliciousExt}`);
+                result.riskLevel = 'critical';
+            }
+
+            // 7. Check for homograph attacks (punycode)
+            if (domain.includes('xn--')) {
+                result.isMalicious = true;
+                result.reasons.push('Punycode domain detected (possible homograph attack)');
+                result.riskLevel = result.riskLevel === 'critical' ? 'critical' : 'high';
+            }
+
+            // 8. Check for excessive subdomains (subdomain abuse)
+            const subdomains = domain.split('.').length - 2;
+            if (subdomains > 3) {
+                result.isMalicious = true;
+                result.reasons.push('Suspicious number of subdomains');
+                result.riskLevel = result.riskLevel === 'critical' ? 'critical' : 'medium';
+            }
+
+            // 9. Check for common typosquatting patterns
+            const legitimateDomains = [
+                'google.com', 'facebook.com', 'amazon.com', 'microsoft.com', 
+                'apple.com', 'netflix.com', 'paypal.com', 'ebay.com',
+                'twitter.com', 'instagram.com', 'linkedin.com', 'youtube.com'
+            ];
+            
+            legitimateDomains.forEach(legit => {
+                const legitName = legit.split('.')[0];
+                if (domain.includes(legitName) && domain !== legit) {
+                    // Check for character substitution or addition
+                    const domainName = domain.split('.')[0];
+                    if (this.calculateSimilarity(domainName, legitName) > 0.7 && domainName !== legitName) {
+                        result.isMalicious = true;
+                        result.reasons.push(`Possible typosquatting of ${legit}`);
+                        result.riskLevel = result.riskLevel === 'critical' ? 'critical' : 'high';
+                    }
+                }
+            });
+
+            // 10. Check for suspicious URL parameters
+            const suspiciousParams = ['download', 'install', 'update', 'secure', 'verify', 'login'];
+            const params = urlObj.search.toLowerCase();
+            const foundSuspiciousParams = suspiciousParams.filter(param => params.includes(param));
+            if (foundSuspiciousParams.length > 2) {
+                result.isMalicious = true;
+                result.reasons.push('Multiple suspicious URL parameters detected');
+                result.riskLevel = result.riskLevel === 'critical' ? 'critical' : 'medium';
+            }
+
+        } catch (error) {
+            // Invalid URL format might itself be suspicious
+            result.isMalicious = true;
+            result.reasons.push('Invalid or malformed URL structure');
+            result.riskLevel = 'medium';
+        }
+
+        return result;
+    }
+
+    // Helper function for similarity calculation
+    calculateSimilarity(str1, str2) {
+        const longer = str1.length > str2.length ? str1 : str2;
+        const shorter = str1.length > str2.length ? str2 : str1;
+        
+        if (longer.length === 0) return 1.0;
+        
+        const editDistance = this.levenshteinDistance(longer, shorter);
+        return (longer.length - editDistance) / longer.length;
+    }
+
+    // Levenshtein distance calculation
+    levenshteinDistance(str1, str2) {
+        const matrix = [];
+        for (let i = 0; i <= str2.length; i++) {
+            matrix[i] = [i];
+        }
+        for (let j = 0; j <= str1.length; j++) {
+            matrix[0][j] = j;
+        }
+        for (let i = 1; i <= str2.length; i++) {
+            for (let j = 1; j <= str1.length; j++) {
+                if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
+                    );
+                }
+            }
+        }
+        return matrix[str2.length][str1.length];
+    }
+
+    validateUrl(url) {
+        try {
+            const parsed = new URL(url);
+            return ['http:', 'https:'].includes(parsed.protocol);
+        } catch {
+            return false;
+        }
+    }
+
+    displayResult(decodedText, contentType, format = 'QR_CODE') {
+        const resultContainer = document.getElementById('qr-reader-results');
+        const resultContent = document.getElementById('result-content');
+        const actionButtons = document.getElementById('action-buttons');
+        
+        if (!resultContainer || !resultContent || !actionButtons) return;
+        
+        resultContainer.style.opacity = '0';
+        resultContainer.style.transform = 'translateY(20px)';
+        resultContainer.style.display = 'block';
+
+        setTimeout(() => {
+            resultContainer.style.opacity = '1';
+            resultContainer.style.transform = 'translateY(0)';
+        }, 50);
+
+        resultContent.innerHTML = '';
+        actionButtons.innerHTML = '';
+        
+        const badgeContainer = document.createElement('div');
+        badgeContainer.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 10px;';
+        
+        const formatBadge = document.createElement('div');
+        formatBadge.className = 'format-badge';
+        formatBadge.textContent = format;
+        badgeContainer.appendChild(formatBadge);
+        
+        // Check for malicious URLs if content is a URL
+        let maliciousCheck = { isMalicious: false };
+        if (contentType === 'url') {
+            maliciousCheck = this.detectMaliciousURL(decodedText);
+            if (maliciousCheck.isMalicious) {
+                const maliciousBadge = document.createElement('div');
+                maliciousBadge.className = 'format-badge';
+                maliciousBadge.style.backgroundColor = 'var(--error-color)';
+                maliciousBadge.textContent = 'MALICIOUS URL';
+                badgeContainer.appendChild(maliciousBadge);
+                
+                const questionBtn = document.createElement('button');
+                questionBtn.style.cssText = `
+                    background: var(--error-color);
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: bold;
+                    transition: all 0.2s ease;
+                    position: relative;
+                    top: -5px;
+                `;
+                questionBtn.innerHTML = '?';
+                questionBtn.title = 'View security information';
+                questionBtn.onmouseover = () => questionBtn.style.transform = 'scale(1.1)';
+                questionBtn.onmouseout = () => questionBtn.style.transform = 'scale(1)';
+                questionBtn.onclick = () => this.showMaliciousURLModal(maliciousCheck, decodedText);
+                badgeContainer.appendChild(questionBtn);
+            }
+        }
+        
+        resultContent.appendChild(badgeContainer);
+        
+        if (contentType === 'encrypted') {
+            this.displayEncryptedContent(decodedText, resultContent, actionButtons);
+            return;
+        }
+        
+        if (contentType === 'xml') {
+            this.displayXMLContent(decodedText, resultContent, actionButtons);
+            return;
+        }
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.textContent = decodedText;
+        resultContent.appendChild(contentDiv);
+        
+        const actions = {
+            url: maliciousCheck.isMalicious ? [
+                ['<i class="fas fa-copy"></i> Copy URL', (btn) => this.copyToClipboard(decodedText, btn)]
+            ] : [
+                ['<i class="fas fa-external-link-alt"></i> Open URL', () => this.validateUrl(decodedText) && window.open(decodedText, '_blank')],
+                ['<i class="fas fa-copy"></i> Copy URL', (btn) => this.copyToClipboard(decodedText, btn)]
+            ],
+            email: [
+                ['<i class="fas fa-envelope"></i> Send Email', () => window.open(`mailto:${decodedText}`)],
+                ['<i class="fas fa-copy"></i> Copy Email', (btn) => this.copyToClipboard(decodedText.replace('mailto:', ''), btn)]
+            ],
+            phone: [
+                ['<i class="fas fa-phone"></i> Call', () => window.open(`tel:${decodedText}`)],
+                ['<i class="fas fa-copy"></i> Copy Number', (btn) => this.copyToClipboard(decodedText.replace('tel:', ''), btn)]
+            ],
+            wifi: [
+                ['<i class="fas fa-wifi"></i> Copy Network', (btn) => this.copyToClipboard(this.parseWifiQR(decodedText).ssid, btn)],
+                ['<i class="fas fa-key"></i> Copy Password', (btn) => this.copyToClipboard(this.parseWifiQR(decodedText).password, btn)]
+            ],
+            geo: [
+                ['<i class="fas fa-map-marked-alt"></i> Open in Maps', () => this.openInMaps(decodedText)],
+                ['<i class="fas fa-copy"></i> Copy Location', (btn) => this.copyToClipboard(decodedText, btn)]
+            ],
+            sms: [
+                ['<i class="fas fa-sms"></i> Send SMS', () => window.open(decodedText)],
+                ['<i class="fas fa-copy"></i> Copy', (btn) => this.copyToClipboard(decodedText, btn)]
+            ],
+            text: [
+                ['<i class="fas fa-copy"></i> Copy Text', (btn) => this.copyToClipboard(decodedText, btn)]
+            ]
+        };
+        
+        (actions[contentType] || actions.text).forEach(([html, onClick]) => {
+            const button = document.createElement('button');
+            button.innerHTML = html;
+            button.className = 'smart-action-button';
+            
+            if (onClick) {
+                button.addEventListener('click', () => onClick(button));
+            }
+            
+            actionButtons.appendChild(button);
+        });
+    }
+
+    showMaliciousURLModal(maliciousCheck, url) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        `;
+        
+        const riskColors = {
+            low: '#f59e0b',
+            medium: '#ea580c', 
+            high: '#dc2626',
+            critical: '#991b1b'
+        };
+        
+        modal.innerHTML = `
+            <div style="background: var(--surface-color); border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;">
+                <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: var(--text-color); font-size: 20px;">
+                        MALICIOUS URL DETECTED
+                    </h3>
+                    <button onclick="this.closest('div').parentElement.parentElement.remove();" 
+                            style="background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer;">×</button>
+                </div>
+                <div style="padding: 20px; overflow: auto; flex: 1;">
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; margin-bottom: 8px; color: var(--text-secondary);">
+                            Risk Level: <strong style="color: white; text-transform: uppercase; background: ${riskColors[maliciousCheck.riskLevel]}; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                                ${maliciousCheck.riskLevel}
+                            </strong>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(0, 0, 38, 0.1); border-radius: var(--card-border-radius); padding: 15px; margin-bottom: 15px; border-left: 4px solid var(--error-color);">
+                        <div style="font-weight: 600; margin-bottom: 10px; color: var(--text-color);">
+                            Security Threats Detected:
+                        </div>
+                        <ul style="margin: 0; padding-left: 20px; line-height: 1.6; color: var(--text-color);">
+                            ${maliciousCheck.reasons.map(reason => `<li>${reason}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div style="background: rgba(0, 0, 38, 0.1); border-radius: var(--card-border-radius); padding: 15px; font-size: 14px; line-height: 1.8; color: var(--text-color); border-left: 4px solid black ;">
+                        <strong style="display: block; margin-bottom: 10px;">
+                            Safety Recommendations:
+                        </strong>
+                        <div style="padding-left: 0px;">
+                            • DO NOT click or visit this URL<br>
+                            • DO NOT enter personal information<br>
+                            • Report this URL to authorities if received via message<br>
+                            • Run antivirus scan if you have visited this URL<br>
+                            • Consider this QR code as potentially dangerous
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--history-bg); border-radius: var(--card-border-radius); padding: 15px; margin-top: 15px; border: 1px solid var(--border-color);">
+                        <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-color); font-size: 14px;">
+                            Detected URL:
+                        </div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 12px; color: var(--text-secondary); word-break: break-all; background: var(--surface-color); padding: 10px; border-radius: 6px;">
+                            ${url}
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                    <button class="smart-action-button" onclick="this.closest('div').parentElement.parentElement.remove();" 
+                            style="background-color: var(--error-color);">
+                        Close Warning
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        
+        // Show notification with warning
+        this.showNotification(`MALICIOUS URL DETECTED - ${maliciousCheck.riskLevel.toUpperCase()} RISK!`, 'error', 8000);
+        
+        // Vibrate for warning
+        if ('vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200, 100, 200]);
+        }
+    }
+
+    displayEncryptedContent(encryptedText, resultContent, actionButtons) {
+        const encryptedData = this.parseEncryptedQR(encryptedText);
+        
+        const encryptedContainer = document.createElement('div');
+        encryptedContainer.className = 'encrypted-container';
+        
+        encryptedContainer.innerHTML = `
+            <div class="encrypted-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h3 style="margin: 0 0 15px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-shield-alt"></i>
+                Encrypted QR Code
+            </h3>
+            <div class="encrypted-info">
+                <div><strong>Method:</strong> ${encryptedData.method}</div>
+                <div><strong>Original Type:</strong> ${encryptedData.originalType}</div>
+                <div><strong>Created:</strong> ${encryptedData.created}</div>
+                <div><strong>Status:</strong> Encrypted & Password Protected</div>
+            </div>
+            
+            <div class="password-input-container">
+                <input type="password" class="password-input" id="decryptPassword" 
+                       placeholder="Enter password to decrypt..." 
+                       data-encrypted="${encodeURIComponent(encryptedData.encryptedData)}">
+                <button class="decrypt-button" id="decryptButton">
+                    <i class="fas fa-key"></i>
+                    Decrypt
+                </button>
+            </div>
+            
+            <div id="decryptionResult"></div>
+        `;
+        
+        resultContent.appendChild(encryptedContainer);
+        
+        const passwordInput = document.getElementById('decryptPassword');
+        const decryptButton = document.getElementById('decryptButton');
+        
+        if (passwordInput && decryptButton) {
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.performDecryption();
+                }
+            });
+            
+            decryptButton.addEventListener('click', () => {
+                this.performDecryption();
+            });
+        }
+        
+        const mainActions = [
+            ['<i class="fas fa-copy"></i> Copy Encrypted Data', (btn) => this.copyToClipboard(encryptedData.encryptedData, btn)],
+            ['<i class="fas fa-info-circle"></i> Show Raw Data', () => this.showRawEncryptedData(encryptedText)]
+        ];
+        
+        mainActions.forEach(([html, onClick]) => {
+            const button = document.createElement('button');
+            button.innerHTML = html;
+            button.className = 'smart-action-button';
+            button.addEventListener('click', () => onClick(button));
+            actionButtons.appendChild(button);
+        });
+    }
+
+    parseEncryptedQR(content) {
+        const defaultData = {
+            method: 'AES-256',
+            originalType: 'TEXT',
+            created: 'Unknown',
+            encryptedData: ''
+        };
+        
+        try {
+            const methodMatch = content.match(/Method:\s*([^=]+)/i);
+            if (methodMatch) {
+                defaultData.method = methodMatch[1].trim();
+            }
+            
+            const typeMatch = content.match(/Original Data Type:\s*([^]+)/i);
+            if (typeMatch) {
+                defaultData.originalType = typeMatch[1].trim();
+            }
+            
+            const dateMatch = content.match(/Created:\s*([^]+)/i);
+            if (dateMatch) {
+                defaultData.created = dateMatch[1].trim();
+            }
+            
+            const dataMatch = content.match(/Technical Data:\s*([A-Za-z0-9+/=]+)/);
+            if (dataMatch) {
+                defaultData.encryptedData = dataMatch[1].trim();
+            } else {
+                const base64Match = content.match(/U2FsdGVkX1[A-Za-z0-9+/=]+/);
+                if (base64Match) {
+                    defaultData.encryptedData = base64Match[0];
+                }
+            }
+        } catch (error) {
+            console.error('Error parsing encrypted QR:', error);
+        }
+        
+        return defaultData;
+    }
+
+    async performDecryption() {
+        const passwordInput = document.getElementById('decryptPassword');
+        const decryptButton = document.getElementById('decryptButton');
+        const resultDiv = document.getElementById('decryptionResult');
+        
+        if (!passwordInput || !decryptButton || !resultDiv) return;
+        
+        const password = passwordInput.value.trim();
+        const encryptedData = decodeURIComponent(passwordInput.dataset.encrypted);
+        
+        if (!password) {
+            this.showDecryptionError('Please enter a password');
+            return;
+        }
+        
+        if (!encryptedData) {
+            this.showDecryptionError('No encrypted data found');
+            return;
+        }
+        
+        decryptButton.disabled = true;
+        decryptButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Decrypting...';
+        resultDiv.innerHTML = '';
+        
+        try {
+            const decrypted = CryptoJS.AES.decrypt(encryptedData, password);
+            const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+            
+            if (!decryptedText) {
+                throw new Error('Invalid password or corrupted data');
+            }
+            
+            this.showDecryptedContent(decryptedText, resultDiv);
+            this.showNotification('Decryption successful!', 'success');
+            
+            const originalType = this.detectContentType(decryptedText);
+            this.addToHistory(decryptedText, originalType, 'DECRYPTED');
+            
+        } catch (error) {
+            this.showDecryptionError('Decryption failed: ' + (error.message || 'Invalid password'));
+        } finally {
+            decryptButton.disabled = false;
+            decryptButton.innerHTML = '<i class="fas fa-key"></i> Decrypt';
+        }
+    }
+
+    showDecryptedContent(decryptedText, container) {
+        const contentType = this.detectContentType(decryptedText);
+        
+        container.innerHTML = `
+            <div class="decrypted-content">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 1px; margin-bottom: 10px;">
+                    <i class="fas fa-unlock" style="color: #22c55e; font-size: 16px; transform: translateY(-12px);"></i>
+                    <div>
+                        <div style="font-weight: 600; color: #22c55e;">Decryption Successful!</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Content Type: ${contentType.toUpperCase()}</div>
+                    </div>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; word-break: break-word;">
+                    ${decryptedText}
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 1px; flex-wrap: wrap; align-items: center; justify-content: center;">
+                    <button class="smart-action-button" onclick="scanner.copyToClipboard('${decryptedText.replace(/'/g, "\\'")}', this)">
+                        <i class="fas fa-copy"></i> Copy Decrypted
+                    </button>
+                   
+                </div>
+            </div>
+        `;
+    }
+
+    showDecryptionError(message) {
+        const resultDiv = document.getElementById('decryptionResult');
+        if (resultDiv) {
+            resultDiv.innerHTML = `
+                <div class="decryption-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    ${message}
+                </div>
+            `;
+        }
+        this.showNotification(message, 'error');
+    }
+
+    handleDecryptedContent(content, contentType) {
+        switch (contentType) {
+            case 'url':
+                if (this.validateUrl(content)) {
+                    window.open(content, '_blank');
+                }
+                break;
+            case 'email':
+                window.open(`mailto:${content.replace('mailto:', '')}`);
+                break;
+            case 'phone':
+                window.open(`tel:${content.replace('tel:', '')}`);
+                break;
+            case 'geo':
+                this.openInMaps(content);
+                break;
+            case 'sms':
+                window.open(content);
+                break;
+            default:
+                this.copyToClipboard(content);
+                break;
+        }
+    }
+
+    showRawEncryptedData(rawData) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            text-align: center;
+        `;
+        modal.innerHTML = `
+            <div style="background: var(--surface-color); border-radius: 12px; width: 100%; max-width: 600px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
+                <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: var(--text-color);"><i class="fas fa-code"></i> Raw Encrypted Data</h3>
+                    <button onclick="this.closest('div').parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer;">×</button>
+                </div>
+                <div style="padding: 20px; overflow: auto; flex: 1;">
+                    <pre style="margin: 0; background: var(--xml-bg); padding: 15px; border-radius: 8px; font-size: 14px; color: var(--text-color); white-space: pre-wrap; word-break: break-word;">${rawData}</pre>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <button class="smart-action-button" onclick="scanner.copyToClipboard(\`${rawData.replace(/`/g, '\\`')}\`, this)">
+                            <i class="fas fa-copy"></i> Copy Raw Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    }
+
+    displayXMLContent(xmlText, resultContent, actionButtons) {
+        const xmlContainer = document.createElement('div');
+        xmlContainer.className = 'xml-container';
+        
+        const xmlHeader = document.createElement('div');
+        xmlHeader.className = 'xml-header';
+        xmlHeader.innerHTML = `
+            <div class="xml-title">XML Data</div>
+            <div class="xml-actions">
+                <button class="xml-action-btn" onclick="scanner.toggleXMLView(this)">
+                    <i class="fas fa-code"></i> Raw
+                </button>
+                <button class="xml-action-btn" onclick="scanner.copyToClipboard(\`${xmlText.replace(/`/g, '\\`')}\`, this)">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+        `;
+        
+        const xmlContent = document.createElement('div');
+        xmlContent.className = 'xml-content';
+        
+        try {
+            xmlContent.innerHTML = this.formatXML(xmlText);
+        } catch (error) {
+            xmlContent.textContent = xmlText;
+        }
+        
+        xmlContainer.appendChild(xmlHeader);
+        xmlContainer.appendChild(xmlContent);
+        resultContent.appendChild(xmlContainer);
+        
+        const mainActions = [
+            ['<i class="fas fa-code"></i> View Formatted', () => this.showXMLModal(xmlText)],
+            ['<i class="fas fa-copy"></i> Copy XML', (btn) => this.copyToClipboard(xmlText, btn)],
+            ['<i class="fas fa-download"></i> Download', () => this.downloadXML(xmlText)]
+        ];
+        
+        mainActions.forEach(([html, onClick]) => {
+            const button = document.createElement('button');
+            button.innerHTML = html;
+            button.className = 'smart-action-button';
+            button.addEventListener('click', () => onClick(button));
+            actionButtons.appendChild(button);
+        });
+    }
+
+    formatXML(xml) {
+        let formatted = xml
+            .replace(/</g, '<')
+            .replace(/>/g, '>')
+            .replace(/(<\/?)(\w+)(.*?)(>)/g, (match, p1, p2, p3, p4) => {
+                const attrs = p3.replace(/(\w+)="([^"]*)"/g, 
+                    '<span class="xml-attr">$1</span>=<span class="xml-value">"$2"</span>');
+                return `<span class="xml-tag">${p1}${p2}</span>${attrs}<span class="xml-tag">${p4}</span>`;
+            })
+            .replace(/(>)([^&<]+)(<)/g, '$1<span class="xml-text">$2</span>$3');
+        
+        let level = 0;
+        formatted = formatted.replace(/(<\/?\w+.*?>)/g, (match) => {
+            if (match.includes('</')) level--;
+            const indent = '  '.repeat(Math.max(0, level));
+            if (!match.includes('</') && !match.includes('/>')) level++;
+            return '\n' + indent + match;
+        });
+        
+        return formatted.trim();
+    }
+
+    showXMLModal(xmlText) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: var(--surface-color); border-radius: 12px; width: 100%; max-width: 800px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
+                <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: var(--text-color);">XML Viewer</h3>
+                    <button onclick="this.closest('div').parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer;">×</button>
+                </div>
+                <div style="padding: 20px; overflow: auto; flex: 1;">
+                    <pre class="xml-container" style="margin: 0; max-height: none;">${this.formatXML(xmlText)}</pre>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    }
+
+    downloadXML(xmlText) {
+        const blob = new Blob([xmlText], { type: 'text/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `qr-scan-${Date.now()}.xml`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showNotification('XML file downloaded', 'success');
+    }
+
+    toggleXMLView(button) {
+        const xmlContent = button.closest('.xml-container').querySelector('.xml-content');
+        const isRaw = button.textContent.includes('Raw');
+        
+        if (isRaw) {
+            button.innerHTML = '<i class="fas fa-code"></i> Formatted';
+            const originalText = xmlContent.textContent || xmlContent.innerText;
+            xmlContent.innerHTML = `<pre style="margin: 0; white-space: pre-wrap;">${originalText}</pre>`;
+        } else {
+            button.innerHTML = '<i class="fas fa-code"></i> Raw';
+            const text = xmlContent.textContent || xmlContent.innerText;
+            xmlContent.innerHTML = this.formatXML(text);
+        }
+    }
+
+    openInMaps(geoUrl) {
+        const match = geoUrl.match(/geo:([-?\d.]+),([-?\d.]+)/);
+        if (match) {
+            const lat = match[1];
+            const lng = match[2];
+            const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+            window.open(mapsUrl, '_blank');
+        } else {
+            this.showNotification('Invalid location format', 'error');
+        }
+    }
+
+    parseWifiQR(content) {
+        const match = content.match(/WIFI:(?:T:([^;]*);)?(?:S:([^;]*);)?(?:P:([^;]*);)?(?:H:([^;]*);)?/i);
+        return {
+            type: match?.[1] || 'WPA',
+            ssid: match?.[2] || '',
+            password: match?.[3] || '',
+            hidden: match?.[4] === 'true'
+        };
+    }
+
+    async copyToClipboard(text, buttonElement) {
+        const originalText = buttonElement.innerHTML;
+        const originalClass = buttonElement.className;
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            buttonElement.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            buttonElement.classList.add('copied');
+            this.showNotification('Copied to clipboard!', 'success');
+        } catch (error) {
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                buttonElement.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                buttonElement.classList.add('copied');
+                this.showNotification('Copied to clipboard!', 'success');
+            } catch (fallbackError) {
+                this.showNotification('Failed to copy to clipboard', 'error');
+            }
+        } finally {
+            setTimeout(() => {
+                buttonElement.innerHTML = originalText;
+                buttonElement.classList.remove('copied');
+            }, 2000);
+        }
+    }
+
+    playSuccessSound() {
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBziR1/LMeSwFJHfH8N2QQAoUY7zuyKBSEwxOq+fzu2MbBTOG0fLVfywELYDC8N2QRwsTYL7zxJtZEgpUqOvtlAcCOJq+4cFyKgY0gcf+6FMCGFSp5N2SPAcYMK7m0G/hJxAOma7mz2/wMDHJIAEAkiRAJgGJCJmqRGJIKJEfICiQHECPOGJTJAEAKZCFYgSAKJEgKJGfQoCAP1JNIJIJCo0KGJoYGJ0aJWJFKBmLTIZVkoIkaZaKHJcLCgAWJkSEU5CCRwMHICWOhkuVggYDFjFCiE6FiEyTgkgEUvgLCgAQJgOJOgggU1ccOBOLTYaXgQoBFipBkAECCIUJRCGLgBAMFgBKKZEJCiCAP1JFO1aXiE0DCgAWGZIHFjJKlx4sVJEJDIwLBYA6VUPPfyUTaHM4BCgQhgAEQ9C6kE2AQCAzLhEZLEQJQoiMSiOLgAkBgL+dQABIEgwJjwkFHAkHCvmLmg0kgApoCZUKjxuJMDAyFjMzMy4RaCCgEgVhgHGFgzCMOhKIMEDCiDhRLgSEhEKQOE8v2hEqVAsAABEOaGIZLSLgSCAhBQAAAAEWE08sF4VDAAAA');
+            audio.play().catch(() => {});
+            
+            if ('vibrate' in navigator) {
+                navigator.vibrate(100);
+            }
+        } catch (error) {
+            // Silent fail
+        }
+    }
+
+    addScanningOverlay() {
+        const readerContainer = document.getElementById('qr-reader');
+        if (!readerContainer) return;
+        
+        const existingOverlay = document.getElementById('scanning-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+        
+        const overlay = document.createElement('div');
+        overlay.id = 'scanning-overlay';
+        overlay.innerHTML = `
+            <style>
+                #scanning-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    pointer-events: none;
+                    z-index: 10;
+                }
+                
+                .scan-line {
+                    position: absolute;
+                    top: 50%;
+                    left: 0;
+                    right: 0;
+                    height: 2px;
+                    background: var(--secondary-color);
+                    animation: scanLineAnimation 2s infinite linear;
+                    box-shadow: 0 0 8px var(--secondary-color);
+                }
+                
+                .scan-target {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: ${CONFIG.SCANNER.QR_BOX_SIZE}px;
+                    height: ${CONFIG.SCANNER.QR_BOX_SIZE}px;
+                    border: 2px solid var(--secondary-color);
+                    border-radius: 8px;
+                    box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.3);
+                }
+                
+                .scan-target-corner {
+                    position: absolute;
+                    width: 20px;
+                    height: 20px;
+                    border-color: var(--secondary-color);
+                    border-width: 2px;
+                }
+                
+                .corner-top-left {
+                    top: -1px;
+                    left: -1px;
+                    border-top-style: solid;
+                    border-left-style: solid;
+                    border-top-left-radius: 8px;
+                }
+                
+                .corner-top-right {
+                    top: -1px;
+                    right: -1px;
+                    border-top-style: solid;
+                    border-right-style: solid;
+                    border-top-right-radius: 8px;
+                }
+                
+                .corner-bottom-left {
+                    bottom: -1px;
+                    left: -1px;
+                    border-bottom-style: solid;
+                    border-left-style: solid;
+                    border-bottom-left-radius: 8px;
+                }
+                
+                .corner-bottom-right {
+                    bottom: -1px;
+                    right: -1px;
+                    border-bottom-style: solid;
+                    border-right-style: solid;
+                    border-bottom-right-radius: 8px;
+                }
+                
+                @keyframes scanLineAnimation {
+                    0% {
+                        transform: translateY(-${CONFIG.SCANNER.QR_BOX_SIZE / 2}px);
+                    }
+                    50% {
+                        transform: translateY(${CONFIG.SCANNER.QR_BOX_SIZE / 2}px);
+                    }
+                    100% {
+                        transform: translateY(-${CONFIG.SCANNER.QR_BOX_SIZE / 2}px);
+                    }
+                }
+            </style>
+            <div class="scan-target">
+                <div class="scan-line"></div>
+                <div class="scan-target-corner corner-top-left"></div>
+                <div class="scan-target-corner corner-top-right"></div>
+                <div class="scan-target-corner corner-bottom-left"></div>
+                <div class="scan-target-corner corner-bottom-right"></div>
+            </div>
+        `;
+        
+        readerContainer.appendChild(overlay);
+    }
+
+    updateHistoryDisplay() {
+        const historyContainer = document.getElementById('scan-history');
+        const expandCollapseBtn = document.getElementById('expandCollapseBtn');
+        const expandCollapseText = document.getElementById('expandCollapseText');
+        const filterBtn = document.getElementById('filterBtn');
+        
+        if (!historyContainer) return;
+
+        // Apply filters and search
+        this.applyFiltersAndSearch();
+
+        // Update filter button state
+        if (filterBtn) {
+            if (this.hasActiveFilters()) {
+                filterBtn.classList.add('active');
+            } else {
+                filterBtn.classList.remove('active');
+            }
+        }
+
+        const fragment = document.createDocumentFragment();
+        let displayHistory = this.filteredHistory;
+
+        // Show only 3 recent items if not expanded and no active filters
+        if (!this.showAllHistory && !this.hasActiveFilters() && displayHistory.length > 3) {
+            displayHistory = displayHistory.slice(0, 3);
+        }
+
+        if (this.history.length === 0) {
+            const emptyMessage = document.createElement('p');
+            emptyMessage.className = 'empty-history';
+            emptyMessage.textContent = 'No scan history yet';
+            fragment.appendChild(emptyMessage);
+            if (expandCollapseBtn) expandCollapseBtn.style.display = 'none';
+        } else if (displayHistory.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'no-results';
+            noResults.innerHTML = `
+                <i class="fas fa-search"></i>
+                <h4 style="margin: 15px 0 10px 0; color: var(--text-color);">No results found</h4>
+                <p>Try adjusting your search or filter criteria</p>
+            `;
+            fragment.appendChild(noResults);
+            if (expandCollapseBtn) expandCollapseBtn.style.display = 'none';
+        } else {
+            displayHistory.forEach((item) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                
+                historyItem.onclick = (e) => {
+                    // Open modal only if the click is not on an action button
+                    if (!e.target.closest('.history-action-btn')) {
+                        this.showFullScanData(item, this.history.indexOf(item));
+                    }
+                };
+                
+                const header = document.createElement('div');
+                header.className = 'history-item-header';
+                
+                const badges = document.createElement('div');
+                badges.className = 'history-item-badges';
+                
+                const typeBadge = document.createElement('span');
+                typeBadge.className = 'type-badge';
+                typeBadge.textContent = item.type;
+                
+                const formatBadge = document.createElement('span');
+                formatBadge.className = 'format-badge';
+                formatBadge.textContent = item.format || 'QR';
+                formatBadge.style.cssText = 'background-color: var(--text-secondary);';
+                
+                badges.appendChild(typeBadge);
+                badges.appendChild(formatBadge);
+                
+                const actions = document.createElement('div');
+                actions.className = 'history-item-actions';
+                
+                const shareBtn = document.createElement('button');
+                shareBtn.className = 'history-action-btn share-btn';
+                shareBtn.innerHTML = '<i class="fas fa-share-alt"></i>';
+                shareBtn.title = 'Share';
+                shareBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.shareHistoryItem(item);
+                };
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'history-action-btn delete-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.title = 'Delete';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.deleteHistoryItem(this.history.indexOf(item));
+                };
+                
+                actions.appendChild(shareBtn);
+                actions.appendChild(deleteBtn);
+                
+                header.appendChild(badges);
+                header.appendChild(actions);
+                
+                const content = document.createElement('div');
+                content.className = 'content';
+                content.innerHTML = this.highlightSearchTerm(item.text, this.currentFilters.search);
+                content.title = 'Click to view full content';
+                
+                const timestamp = document.createElement('div');
+                timestamp.className = 'timestamp';
+                timestamp.innerHTML = `
+                    <i class="fas fa-clock"></i>
+                    ${new Date(item.timestamp).toLocaleString()}
+                `;
+                
+                historyItem.appendChild(header);
+                historyItem.appendChild(content);
+                historyItem.appendChild(timestamp);
+                
+                fragment.appendChild(historyItem);
+            });
+
+            // Show/hide expand button
+            if (expandCollapseBtn) {
+                if (this.filteredHistory.length > 3 && !this.hasActiveFilters()) {
+                    expandCollapseBtn.style.display = 'block';
+                    expandCollapseText.textContent = this.showAllHistory ? 'Show Recent Only' : 'Show All Scans';
+                    expandCollapseBtn.classList.toggle('expanded', this.showAllHistory);
+                } else {
+                    expandCollapseBtn.style.display = 'none';
+                }
+            }
+        }
+
+        historyContainer.innerHTML = '';
+        historyContainer.appendChild(fragment);
+    }
+
+    // Modal Functions
+    openSearchBox() {
+        const searchBox = document.getElementById('searchBox');
+        const searchInput = document.getElementById('searchInput');
+        if (searchBox && searchInput) {
+            searchBox.classList.add('show');
+            setTimeout(() => searchInput.focus(), 300);
+        }
+    }
+
+    closeSearchBox() {
+        const searchBox = document.getElementById('searchBox');
+        if (searchBox) {
+            searchBox.classList.remove('show');
+        }
+    }
+
+    openFilterModal() {
+        const modal = document.getElementById('filterModal');
+        if (modal) {
+            modal.classList.add('show');
+        }
+    }
+
+    closeFilterModal() {
+        const modal = document.getElementById('filterModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+
+    applyFiltersAndClose() {
+        this.updateHistoryDisplay();
+        this.closeFilterModal();
+        this.showNotification('Filters applied', 'success', 1500);
+    }
+
+    openClearModal() {
+        const modal = document.getElementById('clearModal');
+        const historyCount = document.getElementById('historyCount');
+        if (modal && historyCount) {
+            historyCount.textContent = this.history.length;
+            modal.classList.add('show');
+        }
+    }
+
+    closeClearModal() {
+        const modal = document.getElementById('clearModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+
+    confirmClearHistory() {
+        this.clearHistory();
+        this.closeClearModal();
+    }
+
+    toggleExpandCollapse() {
+        this.showAllHistory = !this.showAllHistory;
+        this.updateHistoryDisplay();
+    }
+
+    applyFiltersAndSearch() {
+        let filtered = [...this.history];
+        
+        // Apply search filter
+        if (this.currentFilters.search) {
+            const searchTerm = this.currentFilters.search.toLowerCase();
+            filtered = filtered.filter(item => 
+                item.text.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply type filter
+        if (this.currentFilters.type) {
+            filtered = filtered.filter(item => item.type === this.currentFilters.type);
+        }
+        
+        // Apply format filter
+        if (this.currentFilters.format) {
+            filtered = filtered.filter(item => (item.format || 'QR_CODE') === this.currentFilters.format);
+        }
+        
+        // Apply date range filter
+        if (this.currentFilters.dateFrom || this.currentFilters.dateTo) {
+            filtered = filtered.filter(item => {
+                const itemDate = new Date(item.timestamp).toISOString().split('T')[0];
+                
+                if (this.currentFilters.dateFrom && itemDate < this.currentFilters.dateFrom) {
+                    return false;
+                }
+                
+                if (this.currentFilters.dateTo && itemDate > this.currentFilters.dateTo) {
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+        
+        this.filteredHistory = filtered;
+    }
+
+    highlightSearchTerm(text, searchTerm) {
+        if (!searchTerm) return text;
+        
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        return text.replace(regex, '<mark style="background: var(--secondary-color); color: white; padding: 2px 4px; border-radius: 3px;">$1</mark>');
+    }
+
+    hasActiveFilters() {
+        return this.currentFilters.search || 
+               this.currentFilters.type || 
+               this.currentFilters.format || 
+               this.currentFilters.dateFrom || 
+               this.currentFilters.dateTo;
+    }
+
+    setupSearchAndFilters() {
+        const searchInput = document.getElementById('searchInput');
+        const searchBoxClose = document.getElementById('searchBoxClose');
+        const typeFilter = document.getElementById('typeFilter');
+        const formatFilter = document.getElementById('formatFilter');
+        const dateFromFilter = document.getElementById('dateFromFilter');
+        const dateToFilter = document.getElementById('dateToFilter');
+
+        // Search input
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.currentFilters.search = e.target.value;
+                this.updateHistoryDisplay();
+            });
+            
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.closeSearchBox();
+                } else if (e.key === 'Escape') {
+                    this.closeSearchBox();
+                }
+            });
+        }
+
+        // Search box close
+        if (searchBoxClose) {
+            searchBoxClose.addEventListener('click', () => {
+                this.closeSearchBox();
+            });
+        }
+
+        // Type filter
+        if (typeFilter) {
+            typeFilter.addEventListener('change', (e) => {
+                this.currentFilters.type = e.target.value;
+            });
+        }
+
+        // Format filter
+        if (formatFilter) {
+            formatFilter.addEventListener('change', (e) => {
+                this.currentFilters.format = e.target.value;
+            });
+        }
+
+        // Date filters
+        if (dateFromFilter) {
+            dateFromFilter.addEventListener('change', (e) => {
+                this.currentFilters.dateFrom = e.target.value;
+            });
+        }
+
+        if (dateToFilter) {
+            dateToFilter.addEventListener('change', (e) => {
+                this.currentFilters.dateTo = e.target.value;
+            });
+        }
+
+        // Close modals on outside click
+        document.addEventListener('click', (e) => {
+            const searchBox = document.getElementById('searchBox');
+            const filterModal = document.getElementById('filterModal');
+            const clearModal = document.getElementById('clearModal');
+
+            if (searchBox && searchBox.classList.contains('show') && !searchBox.contains(e.target)) {
+                this.closeSearchBox();
+            }
+
+            if (filterModal && filterModal.classList.contains('show') && e.target === filterModal) {
+                this.closeFilterModal();
+            }
+
+            if (clearModal && clearModal.classList.contains('show') && e.target === clearModal) {
+                this.closeClearModal();
+            }
+        });
+
+        // ESC key to close modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeSearchBox();
+                this.closeFilterModal();
+                this.closeClearModal();
+            }
+        });
+    }
+
+    resetAllFilters() {
+        // Reset filter values
+        this.currentFilters = {
+            search: '',
+            type: '',
+            format: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+
+        // Reset UI elements
+        const searchInput = document.getElementById('searchInput');
+        const typeFilter = document.getElementById('typeFilter');
+        const formatFilter = document.getElementById('formatFilter');
+        const dateFromFilter = document.getElementById('dateFromFilter');
+        const dateToFilter = document.getElementById('dateToFilter');
+
+        if (searchInput) searchInput.value = '';
+        if (typeFilter) typeFilter.value = '';
+        if (formatFilter) formatFilter.value = '';
+        if (dateFromFilter) dateFromFilter.value = '';
+        if (dateToFilter) dateToFilter.value = '';
+
+        this.updateHistoryDisplay();
+        this.showNotification('Filters reset', 'success', 1500);
+    }
+
+    showFullScanData(item, index) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        `;
+       
+       // यह फंक्शन टेक्स्ट को HTML में डालने से पहले सुरक्षित बनाता है
+function escapeHTML(str) {
+    str = String(str || '');
+    return str.replace(/[&<>"']/g, function(match) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[match];
+    });
+} /*
+
+      // यह एक उदाहरण है कि आप अपने क्लिक इवेंट में इस कोड को कैसे कॉल करेंगे
+// मान लीजिए आपके पास showScanDetails नाम का एक फंक्शन है
+showFullScanData(item, index) {
+
+    // 1. सबसे पहले एक 'div' एलिमेंट बनाएं जो हमारा Modal होगा
+    const modal = document.createElement('div');
+    
+    // इसे स्टाइल देने के लिए एक क्लास दें (यह आपकी CSS पर निर्भर करता है)
+    // यह modal को स्क्रीन के बीच में लाने और बैकग्राउंड को धुंधला करने में मदद करेगा
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '1000'; */
+
+    // 2. वैरिएबल सेट करें
+    const contentType = item.type;
+    const formatDisplay = item.format || 'QR_CODE';
+
+    // 3. अब modal (छोटा m) के innerHTML को सेट करें
+    modal.innerHTML = `
+        <div id="scanDetailModal" style="background: var(--surface-color); border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin: 0; color: var(--text-color); display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-qrcode"></i> Scan Details
+                    </h3>
+                    <div style="margin-top: 8px; display: flex; gap: 8px;">
+                        <span class="type-badge">${escapeHTML(contentType)}</span>
+                        <span class="format-badge">${escapeHTML(formatDisplay)}</span>
+                    </div>
+                </div>
+                <button onclick="this.closest('#scanDetailModal').parentElement.remove();"
+                        style="background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background-color 0.2s;"
+                        onmouseover="this.style.backgroundColor='var(--border-color)'"
+                        onmouseout="this.style.backgroundColor='transparent'">×</button>
+            </div>
+            <div style="padding: 20px; overflow: auto; flex: 1;">
+                <div style="margin-bottom: 15px;">
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-clock"></i>
+                        Scanned: ${new Date(item.timestamp).toLocaleString()}
+                    </div>
+                </div>
+                <div style="background: var(--history-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <div style="font-size: 14px; font-weight: 600; color: var(--text-color); margin-bottom: 10px;">Content:</div>
+                    <div style="font-family: 'Courier New', monospace; font-size: 14px; color: var(--text-color); white-space: pre-wrap; word-break: break-word; line-height: 1.5; max-height: 300px; overflow-y: auto;">${escapeHTML(item.text)}</div>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <button class="smart-action-button" onclick="scanner.copyToClipboard(${JSON.stringify(item.text).replace(/"/g, '&quot;')}, this)">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <button class="smart-action-button" onclick="scanner.shareHistoryItem(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                    <button class="smart-action-button" onclick="scanner.deleteHistoryItem(${index}); this.closest('#scanDetailModal').parentElement.remove();" style="background-color: var(--error-color);">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;    
+
+        
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    async shareHistoryItem(item) {
+        const shareData = {
+            title: `QR Scan - ${item.type.toUpperCase()}`,
+            text: `Scanned on ${new Date(item.timestamp).toLocaleString()}:\n\n${item.text}`
+        };
+
+        try {
+            if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+                await navigator.share(shareData);
+                this.showNotification('Shared successfully!', 'success');
+            } else {
+                // Fallback to clipboard
+                await this.copyToClipboard(item.text);
+                this.showNotification('Copied to clipboard for sharing', 'success');
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                // Fallback to clipboard
+                try {
+                    await navigator.clipboard.writeText(item.text);
+                    this.showNotification('Copied to clipboard for sharing', 'success');
+                } catch (clipboardError) {
+                    this.showNotification('Unable to share', 'error');
+                }
+            }
+        }
+    }
+
+    deleteHistoryItem(index) {
+        if (index >= 0 && index < this.history.length) {
+            const item = this.history[index];
+            this.history.splice(index, 1);
+            this.saveHistory();
+            this.updateHistoryDisplay();
+            this.showNotification('Scan deleted', 'success');
+        }
+    }
+
+    handleContentAction(content, contentType) {
+        switch (contentType) {
+            case 'url':
+                if (this.validateUrl(content)) {
+                    window.open(content, '_blank');
+                }
+                break;
+            case 'email':
+                window.open(`mailto:${content.replace('mailto:', '')}`);
+                break;
+            case 'phone':
+                window.open(`tel:${content.replace('tel:', '')}`);
+                break;
+            case 'geo':
+                this.openInMaps(content);
+                break;
+            case 'sms':
+                window.open(content);
+                break;
+            case 'wifi':
+                const wifiData = this.parseWifiQR(content);
+                this.copyToClipboard(`Network: ${wifiData.ssid}\nPassword: ${wifiData.password}`);
+                break;
+            default:
+                this.copyToClipboard(content);
+                break;
+        }
+    }
+
+    async processImageForScanning(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            
+            img.onload = () => {
+                try {
+                    const processedImages = [];
+                    
+                    processedImages.push(this.createProcessedImage(img, img.width, img.height, 'original'));
+                    processedImages.push(this.createProcessedImage(img, img.width, img.height, 'high-contrast'));
+                    processedImages.push(this.createProcessedImage(img, img.width, img.height, 'binary'));
+                    processedImages.push(this.createProcessedImage(img, img.width, img.height, 'inverted'));
+                    processedImages.push(this.createProcessedImage(img, img.width, img.height, 'enhanced'));
+                    
+                    const sizes = [800, 1200, 1600];
+                    sizes.forEach(maxSize => {
+                        let { width, height } = img;
+                        if (width > maxSize || height > maxSize) {
+                            const ratio = Math.min(maxSize / width, maxSize / height);
+                            width = Math.floor(width * ratio);
+                            height = Math.floor(height * ratio);
+                            processedImages.push(this.createProcessedImage(img, width, height, `resized-${maxSize}`));
+                        }
+                    });
+                    
+                    resolve(processedImages);
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    createProcessedImage(img, width, height, variant) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        
+        switch (variant) {
+            case 'high-contrast':
+                this.applyHighContrast(data);
+                break;
+            case 'binary':
+                this.applyBinaryThreshold(data);
+                break;
+            case 'inverted':
+                this.applyInversion(data);
+                break;
+            case 'enhanced':
+                this.applyColorEnhancement(data);
+                break;
+            default:
+                break;
+        }
+        
+        if (variant !== 'original') {
+            ctx.putImageData(imageData, 0, 0);
+        }
+        
+        return new Promise(resolve => {
+            canvas.toBlob(resolve, 'image/jpeg', 0.95);
+        });
+    }
+
+    applyHighContrast(data) {
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+            
+            const contrast = 2.5;
+            const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+            const enhanced = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
+            
+            data[i] = enhanced;
+            data[i + 1] = enhanced;
+            data[i + 2] = enhanced;
+        }
+    }
+
+    applyBinaryThreshold(data) {
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+            const binary = gray > 127 ? 255 : 0;
+            
+            data[i] = binary;
+            data[i + 1] = binary;
+            data[i + 2] = binary;
+        }
+    }
+
+    applyInversion(data) {
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = 255 - data[i];
+            data[i + 1] = 255 - data[i + 1];
+            data[i + 2] = 255 - data[i + 2];
+        }
+    }
+
+    applyColorEnhancement(data) {
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            
+            if (max - min > 50) {
+                if (r === max) {
+                    data[i] = Math.min(255, r * 1.3);
+                    data[i + 1] = Math.max(0, g * 0.7);
+                    data[i + 2] = Math.max(0, b * 0.7);
+                } else if (g === max) {
+                    data[i] = Math.max(0, r * 0.7);
+                    data[i + 1] = Math.min(255, g * 1.3);
+                    data[i + 2] = Math.max(0, b * 0.7);
+                } else {
+                    data[i] = Math.max(0, r * 0.7);
+                    data[i + 1] = Math.max(0, g * 0.7);
+                    data[i + 2] = Math.min(255, b * 1.3);
+                }
+            } else {
+                const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                data[i] = gray;
+                data[i + 1] = gray;
+                data[i + 2] = gray;
+            }
+        }
+    }
+
+    async handleFileUpload(file) {
+        if (!file) return;
+
+        if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
+            this.showNotification('Invalid file type. Please upload an image.', 'error');
+            return;
+        }
+
+        if (file.size > CONFIG.SCANNER.MAX_FILE_SIZE) {
+            this.showNotification('File too large. Maximum size is 10MB.', 'error');
+            return;
+        }
+
+        const resultContainer = document.getElementById('qr-reader-results');
+        const resultContent = document.getElementById('result-content');
+        const actionButtons = document.getElementById('action-buttons');
+        
+        if (resultContainer && resultContent) {
+            resultContainer.style.display = 'block';
+            resultContent.innerHTML = `
+                <div class="processing-indicator">
+                    <i class="fas fa-spinner"></i>
+                    <p>Step 1/5: Html5QrCode original...</p>
+                </div>
+            `;
+            actionButtons.innerHTML = '';
+        }
+
+        try {
+            if (!this.html5QrCode) {
+                await this.initializeScanner();
+            }
+
+            try {
+                console.log('Step 1: Html5QrCode original');
+                const decodedText = await this.html5QrCode.scanFile(file, false);
+                this.handleSuccessfulScan(decodedText, 'QR_CODE', 'Html5QrCode Original');
+                return;
+            } catch (error) {
+                console.log('Step 1 failed');
+            }
+
+            if (resultContent) {
+                resultContent.innerHTML = `
+                    <div class="processing-indicator">
+                        <i class="fas fa-spinner"></i>
+                        <p>Step 2/5: Converting to grayscale...</p>
+                    </div>
+                `;
+            }
+
+            try {
+                console.log('Step 2: Grayscale conversion');
+                const grayscaleFile = await this.convertToGrayscale(file);
+                const decodedText = await this.html5QrCode.scanFile(grayscaleFile, false);
+                this.handleSuccessfulScan(decodedText, 'QR_CODE', 'Html5QrCode Grayscale');
+                return;
+            } catch (error) {
+                console.log('Step 2 failed');
+            }
+
+            if (resultContent) {
+                resultContent.innerHTML = `
+                    <div class="processing-indicator">
+                        <i class="fas fa-spinner"></i>
+                        <p>Step 3/5: ZXing original...</p>
+                    </div>
+                `;
+            }
+
+            try {
+                console.log('Step 3: ZXing original');
+                const decodedText = await this.scanWithZXing(file);
+                this.handleSuccessfulScan(decodedText, 'QR_CODE', 'ZXing Original');
+                return;
+            } catch (error) {
+                console.log('Step 3 failed');
+            }
+
+            if (resultContent) {
+                resultContent.innerHTML = `
+                    <div class="processing-indicator">
+                        <i class="fas fa-spinner"></i>
+                        <p>Step 4/5: ZXing grayscale...</p>
+                    </div>
+                `;
+            }
+
+            try {
+                console.log('Step 4: ZXing grayscale');
+                const grayscaleFile = await this.convertToGrayscale(file);
+                const decodedText = await this.scanWithZXing(grayscaleFile);
+                this.handleSuccessfulScan(decodedText, 'QR_CODE', 'ZXing Grayscale');
+                return;
+            } catch (error) {
+                console.log('Step 4 failed');
+            }
+
+            if (resultContent) {
+                resultContent.innerHTML = `
+                    <div class="processing-indicator">
+                        <i class="fas fa-spinner"></i>
+                        <p>Step 5/5: Advanced processing...</p>
+                    </div>
+                `;
+            }
+
+            console.log('Step 5: Advanced processing');
+            const processedImages = await this.processImageForScanning(file);
+            
+            for (let i = 0; i < processedImages.length; i++) {
+                try {
+                    const blob = await processedImages[i];
+                    const processedFile = new File([blob], `processed_${i}_${file.name}`, { 
+                        type: blob.type 
+                    });
+                    
+                    try {
+                        const decodedText = await this.html5QrCode.scanFile(processedFile, true);
+                        this.handleSuccessfulScan(decodedText, 'QR_CODE', `Html5QrCode Advanced (${i + 1})`);
+                        return;
+                    } catch (error) {
+                        // Continue
+                    }
+                    
+                    try {
+                        const decodedText = await this.scanWithZXing(processedFile);
+                        this.handleSuccessfulScan(decodedText, 'QR_CODE', `ZXing Advanced (${i + 1})`);
+                        return;
+                    } catch (error) {
+                        // Continue
+                    }
+                    
+                } catch (error) {
+                    // Continue
+                }
+            }
+
+            this.showFailureMessage();
+        } catch (error) {
+            console.error('All scan attempts failed:', error);
+            this.showFailureMessage();
+        }
+    }
+
+    async convertToGrayscale(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(img, 0, 0);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+                    data[i] = gray;
+                    data[i + 1] = gray;
+                    data[i + 2] = gray;
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                canvas.toBlob(resolve, 'image/jpeg', 0.95);
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    handleSuccessfulScan(decodedText, format, method) {
+        const contentType = this.detectContentType(decodedText);
+        this.addToHistory(decodedText, contentType, format);
+        this.displayResult(decodedText, contentType, format);
+        this.playSuccessSound();
+        
+        if ('vibrate' in navigator) {
+            navigator.vibrate(100);
+        }
+
+        this.showNotification(`QR code detected! (${method})`, 'success');
+    }
+
+    showFailureMessage() {
+        const resultContainer = document.getElementById('qr-reader-results');
+        const resultContent = document.getElementById('result-content');
+        
+        if (resultContainer && resultContent) {
+            resultContainer.style.display = 'block';
+            resultContent.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--error-color);">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 15px;"></i>
+                    <h3 style="margin: 0 0 15px 0; color: var(--text-color);">QR Code Not Found</h3>
+                    <div style="font-size: 14px; line-height: 1.6; color: var(--text-secondary);">
+                        <p><strong>Tried multiple scanning methods:</strong></p>
+                        <p>• Html5QrCode library</p>
+                        <p>• ZXing library</p>
+                        <p>• Advanced image processing</p>
+                        <p>• Multiple format detection</p>
+                        <br>
+                        <p><strong>Tips for better scanning:</strong></p>
+                        <p>• Ensure good lighting and clear image</p>
+                        <p>• QR code should be fully visible</p>
+                        <p>• Try taking photo straight-on (not angled)</p>
+                        <p>• Clean camera lens</p>
+                        <p>• Make sure QR code isn't damaged</p>
+                    </div>
+                </div>
+            `;
+            
+            const actionButtons = document.getElementById('action-buttons');
+            if (actionButtons) {
+                actionButtons.innerHTML = `
+                    <button class="smart-action-button" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-upload"></i> Try Another Image
+                    </button>
+                `;
+            }
+        }
+        
+        this.showNotification('No QR code found after trying multiple methods.', 'error', 5000);
+    }
+
+    // Enhanced Zoom Control Implementation
+    setupZoomControl() {
+        const zoomControls = document.getElementById('zoomControls');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomValueSpan = document.getElementById('zoomValue');
+        const zoomResetBtn = document.getElementById('zoomReset');
+
+        if (!zoomControls || !zoomSlider || !zoomValueSpan) {
+            this.hideZoomControl();
+            return;
+        }
+
+        // Always show zoom controls when scanning starts
+        zoomControls.style.display = 'flex';
+        
+        // Reset zoom to default
+        this.currentZoom = 1.0;
+        zoomSlider.value = this.currentZoom;
+        zoomValueSpan.textContent = `${this.currentZoom.toFixed(1)}x`;
+
+        // Try native camera zoom first, fallback to CSS zoom
+        if (this.videoTrack) {
+            const capabilities = this.videoTrack.getCapabilities();
+            if (capabilities && capabilities.zoom) {
+                // Native camera zoom available
+                this.usingCSSZoom = false;
+                zoomSlider.min = capabilities.zoom.min || CONFIG.SCANNER.MIN_ZOOM;
+                zoomSlider.max = capabilities.zoom.max || CONFIG.SCANNER.MAX_ZOOM;
+                zoomSlider.step = capabilities.zoom.step || CONFIG.SCANNER.ZOOM_STEP;
+                this.currentZoom = capabilities.zoom.current || CONFIG.SCANNER.MIN_ZOOM;
+                zoomSlider.value = this.currentZoom;
+                zoomValueSpan.textContent = `${this.currentZoom.toFixed(1)}x`;
+                
+                this.showNotification('Using native camera zoom', 'info', 2000);
+            } else {
+                // Fallback to CSS zoom
+                this.setupCSSZoom(zoomSlider, zoomValueSpan);
+            }
+        } else {
+            // Fallback to CSS zoom
+            this.setupCSSZoom(zoomSlider, zoomValueSpan);
+        }
+
+        // Zoom slider event
+        const updateZoom = async () => {
+            const newZoom = parseFloat(zoomSlider.value);
+            if (newZoom !== this.currentZoom) {
+                if (this.usingCSSZoom) {
+                    // CSS zoom
+                    this.applyCSSZoom(newZoom);
+                } else {
+                    // Native camera zoom
+                    try {
+                        await this.videoTrack.applyConstraints({
+                            advanced: [{ zoom: newZoom }]
+                        });
+                        this.currentZoom = newZoom;
+                        zoomValueSpan.textContent = `${this.currentZoom.toFixed(1)}x`;
+                    } catch (error) {
+                        console.error('Failed to set native zoom:', error);
+                        // Fallback to CSS zoom
+                        this.setupCSSZoom(zoomSlider, zoomValueSpan);
+                        this.applyCSSZoom(newZoom);
+                    }
+                }
+            }
+        };
+        
+        zoomSlider.oninput = updateZoom;
+        zoomSlider.onchange = updateZoom;
+
+        // Reset button
+        if (zoomResetBtn) {
+            zoomResetBtn.onclick = () => {
+                this.resetZoom(zoomSlider, zoomValueSpan);
+            };
+        }
+    }
+
+    setupCSSZoom(zoomSlider, zoomValueSpan) {
+        this.usingCSSZoom = true;
+        zoomSlider.min = CONFIG.SCANNER.MIN_ZOOM;
+        zoomSlider.max = CONFIG.SCANNER.MAX_ZOOM;
+        zoomSlider.step = CONFIG.SCANNER.ZOOM_STEP;
+        this.currentZoom = CONFIG.SCANNER.MIN_ZOOM;
+        zoomSlider.value = this.currentZoom;
+        zoomValueSpan.textContent = `${this.currentZoom.toFixed(1)}x`;
+        
+        this.showNotification('Using digital zoom (CSS)', 'info', 2000);
+    }
+
+    applyCSSZoom(zoomLevel) {
+        const videoElement = document.querySelector('#qr-reader video');
+        if (videoElement) {
+            videoElement.style.transform = `scale(${zoomLevel})`;
+            this.currentZoom = zoomLevel;
+            
+            const zoomValueSpan = document.getElementById('zoomValue');
+            if (zoomValueSpan) {
+                zoomValueSpan.textContent = `${this.currentZoom.toFixed(1)}x`;
+            }
+        }
+    }
+
+    resetZoom(zoomSlider, zoomValueSpan) {
+        const defaultZoom = CONFIG.SCANNER.MIN_ZOOM;
+        
+        if (this.usingCSSZoom) {
+            this.applyCSSZoom(defaultZoom);
+        } else if (this.videoTrack) {
+            this.videoTrack.applyConstraints({
+                advanced: [{ zoom: defaultZoom }]
+            }).then(() => {
+                this.currentZoom = defaultZoom;
+                zoomValueSpan.textContent = `${this.currentZoom.toFixed(1)}x`;
+            }).catch(() => {
+                // Fallback to CSS zoom
+                this.setupCSSZoom(zoomSlider, zoomValueSpan);
+                this.applyCSSZoom(defaultZoom);
+            });
+        }
+        
+        zoomSlider.value = defaultZoom;
+        this.showNotification('Zoom reset', 'success', 1500);
+    }
+
+    hideZoomControl() {
+        const zoomControls = document.getElementById('zoomControls');
+        if (zoomControls) {
+            zoomControls.style.display = 'none';
+        }
+        
+        // Reset video transform
+        const videoElement = document.querySelector('#qr-reader video');
+        if (videoElement) {
+            videoElement.style.transform = '';
+        }
+    }
+
+    // Low Light Detection
+    startBrightnessMonitor() {
+        if (!this.videoTrack) return;
+
+        const videoElement = document.querySelector('#qr-reader video');
+        if (!videoElement) return;
+
+        this.stopBrightnessMonitor();
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const lowLightWarning = document.getElementById('lowLightWarning');
+        const flashLightButton = document.getElementById('flashLightButton');
+
+        this.brightnessMonitorInterval = setInterval(() => {
+            if (!this.scanning || !this.videoTrack || this.flashOn) {
+                this.hideLowLightWarning();
+                return;
+            }
+
+            try {
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                let totalBrightness = 0;
+                for (let i = 0; i < data.length; i += 400) { 
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    totalBrightness += (0.2126 * r + 0.7152 * g + 0.0722 * b);
+                }
+                const averageBrightness = totalBrightness / (data.length / 400);
+
+                if (averageBrightness < CONFIG.SCANNER.LOW_LIGHT_THRESHOLD) {
+                    if (lowLightWarning.style.display === 'none') {
+                        lowLightWarning.style.display = 'flex';
+                        this.showNotification('Low light detected! Turn on flash for better scan.', 'warning', 5000);
+                    }
+                    if (!this.flashOn && flashLightButton) {
+                        flashLightButton.style.backgroundColor = '#f59e0b';
+                    }
+                } else {
+                    this.hideLowLightWarning();
+                    if (!this.flashOn && flashLightButton) {
+                        flashLightButton.style.backgroundColor = '';
+                    }
+                }
+            } catch (error) {
+                console.warn('Error monitoring brightness:', error);
+                this.stopBrightnessMonitor();
+                this.hideLowLightWarning();
+            }
+        }, 1000);
+    }
+
+    stopBrightnessMonitor() {
+        if (this.brightnessMonitorInterval) {
+            clearInterval(this.brightnessMonitorInterval);
+            this.brightnessMonitorInterval = null;
+        }
+    }
+
+    hideLowLightWarning() {
+        const lowLightWarning = document.getElementById('lowLightWarning');
+        if (lowLightWarning) {
+            lowLightWarning.style.display = 'none';
+        }
+        const flashLightButton = document.getElementById('flashLightButton');
+        if (flashLightButton && !this.flashOn) {
+             flashLightButton.style.backgroundColor = '';
+        }
+    }
+}
+
+// Initialize Scanner
+document.addEventListener('DOMContentLoaded', () => {
+    const scanner = new QRScannerState();
+    window.scanner = scanner;
+
+    // Initialize ZXing with delay
+    setTimeout(() => {
+        if ((typeof ZXing !== 'undefined' || typeof window.ZXing !== 'undefined') && !scanner.zxingReader) {
+            scanner.initializeZXing();
+        }
+    }, 1000);
+
+    // Get all elements
+    const elements = {
+        startButton: document.getElementById('startButton'),
+        fileButton: document.getElementById('fileButton'),
+        fileInput: document.getElementById('fileInput'),
+        flashLightButton: document.getElementById('flashLightButton'),
+        searchBtn: document.getElementById('searchBtn'),
+        filterBtn: document.getElementById('filterBtn'),
+        clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+        expandCollapseBtn: document.getElementById('expandCollapseBtn'),
+        themeToggleButton: document.getElementById('themeToggle'),
+        switchCameraButton: document.getElementById('switchCameraButton'),
+        zoomSlider: document.getElementById('zoomSlider'),
+        zoomReset: document.getElementById('zoomReset')
+    };
+
+    // Start/Stop Scanning
+    if (elements.startButton) {
+        elements.startButton.addEventListener('click', async () => {
+            if (scanner.scanning) {
+                await scanner.stopScanning();
+            } else {
+                await scanner.startScanning();
+            }
+        });
+    }
+
+    // File Upload
+    if (elements.fileButton && elements.fileInput) {
+        elements.fileButton.addEventListener('click', () => elements.fileInput.click());
+        elements.fileInput.addEventListener('change', (e) => scanner.handleFileUpload(e.target.files[0]));
+    }
+
+    // Camera Switch
+    if (elements.switchCameraButton) {
+        elements.switchCameraButton.addEventListener('click', () => scanner.switchCamera());
+    }
+
+    // Flash Toggle
+    if (elements.flashLightButton) {
+        elements.flashLightButton.addEventListener('click', () => scanner.toggleFlash());
+    }
+
+    // Search Button
+    if (elements.searchBtn) {
+        elements.searchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            scanner.openSearchBox();
+        });
+    }
+
+    // Filter Button
+    if (elements.filterBtn) {
+        elements.filterBtn.addEventListener('click', () => scanner.openFilterModal());
+    }
+
+    // Clear History Button
+    if (elements.clearHistoryBtn) {
+        elements.clearHistoryBtn.addEventListener('click', () => scanner.openClearModal());
+    }
+
+    // Expand/Collapse Button
+    if (elements.expandCollapseBtn) {
+        elements.expandCollapseBtn.addEventListener('click', () => scanner.toggleExpandCollapse());
+    }
+    
+    // Theme Toggle
+    if (elements.themeToggleButton) {
+        elements.themeToggleButton.addEventListener('click', () => scanner.toggleTheme());
+    }
+
+    // Initialize History Display
+    scanner.updateHistoryDisplay();
+    scanner.setupSearchAndFilters();
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => scanner.stopScanning());
+});
+       
+       // Function to detect horizontal swipes
+function detectSwipe(element, callback) {
+  let touchstartX = 0;
+  let touchendX = 0;
+  let touchstartY = 0;
+  let touchendY = 0;
+
+  // Set a threshold for what constitutes a horizontal swipe (e.g., 50 pixels)
+  const swipeThreshold = 50;
+
+  element.addEventListener('touchstart', e => {
+    touchstartX = e.changedTouches[0].screenX;
+    touchstartY = e.changedTouches[0].screenY;
+  });
+
+  element.addEventListener('touchend', e => {
+    touchendX = e.changedTouches[0].screenX;
+    touchendY = e.changedTouches[0].screenY;
+    handleGesture();
+  });
+
+  function handleGesture() {
+    const diffX = touchstartX - touchendX;
+    const diffY = touchstartY - touchendY;
+
+    // Check if the horizontal movement is greater than the vertical movement
+    // and if the horizontal movement exceeds the swipe threshold.
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
+      if (diffX > 0) {
+        // Swipe left
+        callback('left');
+      } else {
+        // Swipe right
+        callback('right');
+      }
+    }
+    // If the movement is not a clear horizontal swipe, do nothing.
+  }
+}
+
+// Get the body element to listen for swipes on the entire app
+const appBody = document.body;
+
+// Replace 'https://your-parent-app-url.com' with the exact origin of your parent app
+const parentAppURL = 'https://shubham91150.github.io/Parrent-/';
+
+// Detect swipes and send messages to the parent
+detectSwipe(appBody, (direction) => {
+  window.parent.postMessage({
+    type: 'gesture',
+    gesture: 'horizontalSwipe',
+    direction: direction
+  }, parentAppURL); // Now using the specific parent app URL for security
+  console.log(`Sent a ${direction} swipe message to the parent.`);
+});
+        </script>
+</body>
+  </html>
