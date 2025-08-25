@@ -4149,18 +4149,19 @@ function detectSwipe(element, callback) {
 // Get the body element to listen for swipes on the entire app
 const appBody = document.body;
 
-// Replace 'https://your-parent-app-url.com' with the exact origin of your parent app
-const parentAppURL = 'https://shubham91150.github.io/Parrent-/';
+// The wildcard '*' allows this app to communicate with any parent that embeds it.
+const targetOrigin = '*';
 
 // Detect swipes and send messages to the parent
 detectSwipe(appBody, (direction) => {
+  // We are now sending a different message type that the parent app expects.
   window.parent.postMessage({
-    type: 'gesture',
-    gesture: 'horizontalSwipe',
+    type: 'WHATSAPP_APP_SWIPE', // This type matches what the parent is listening for
     direction: direction
-  }, parentAppURL); // Now using the specific parent app URL for security
+  }, targetOrigin); 
   console.log(`Sent a ${direction} swipe message to the parent.`);
 });
+
         </script>
 </body>
   </html>
