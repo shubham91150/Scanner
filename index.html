@@ -1363,6 +1363,20 @@ const CONFIG = {
     ALLOWED_FILE_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp', 'image/gif']
 };
 
+// Global escapeHTML function for security
+function escapeHTML(str) {
+    str = String(str || '');
+    return str.replace(/[&<>"']/g, function(match) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[match];
+    });
+}
+
 class QRScannerState {
     constructor() {
         this.html5QrCode = null;
@@ -3128,10 +3142,24 @@ class QRScannerState {
     }
 
     highlightSearchTerm(text, searchTerm) {
-        if (!searchTerm) return text;
+        if (!searchTerm) return escapeHTML(text);
+
+        // Escape special regex characters in searchTerm to avoid crash
+        const escapedSearchTermForRegex = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        const regex = new RegExp(`(${escapedSearchTermForRegex})`, 'gi');
         
-        const regex = new RegExp(`(${searchTerm})`, 'gi');
-        return text.replace(regex, '<mark style="background: var(--secondary-color); color: white; padding: 2px 4px; border-radius: 3px;">$1</mark>');
+        // Split the text by the search term (captured)
+        const parts = text.split(regex);
+
+        return parts.map(part => {
+            // Check if this part matches the search term (case insensitive)
+            if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                return `<mark style="background: var(--secondary-color); color: white; padding: 2px 4px; border-radius: 3px;">${escapeHTML(part)}</mark>`;
+            } else {
+                return escapeHTML(part);
+            }
+        }).join('');
     }
 
     hasActiveFilters() {
@@ -3273,18 +3301,7 @@ class QRScannerState {
         `;
        
        // यह फंक्शन टेक्स्ट को HTML में डालने से पहले सुरक्षित बनाता है
-function escapeHTML(str) {
-    str = String(str || '');
-    return str.replace(/[&<>"']/g, function(match) {
-        return {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        }[match];
-    });
-} /*
+/*
 
       // यह एक उदाहरण है कि आप अपने क्लिक इवेंट में इस कोड को कैसे कॉल करेंगे
 // मान लीजिए आपके पास showScanDetails नाम का एक फंक्शन है
