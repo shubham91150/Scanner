@@ -1342,6 +1342,20 @@
     </div>
 
     <script>
+// Global utility for HTML escaping to prevent XSS
+function escapeHTML(str) {
+    str = String(str || '');
+    return str.replace(/[&<>"']/g, function(match) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[match];
+    });
+}
+
 const CONFIG = {
     SCANNER: {
         FPS: 30,
@@ -2562,7 +2576,7 @@ class QRScannerState {
                     <button onclick="this.closest('div').parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer;">×</button>
                 </div>
                 <div style="padding: 20px; overflow: auto; flex: 1;">
-                    <pre style="margin: 0; background: var(--xml-bg); padding: 15px; border-radius: 8px; font-size: 14px; color: var(--text-color); white-space: pre-wrap; word-break: break-word;">${rawData}</pre>
+                    <pre style="margin: 0; background: var(--xml-bg); padding: 15px; border-radius: 8px; font-size: 14px; color: var(--text-color); white-space: pre-wrap; word-break: break-word;">${escapeHTML(rawData)}</pre>
                     <div style="margin-top: 15px; text-align: center;">
                         <button class="smart-action-button" onclick="scanner.copyToClipboard(\`${rawData.replace(/`/g, '\\`')}\`, this)">
                             <i class="fas fa-copy"></i> Copy Raw Data
@@ -3128,10 +3142,19 @@ class QRScannerState {
     }
 
     highlightSearchTerm(text, searchTerm) {
-        if (!searchTerm) return text;
+        // Escape the text to prevent XSS
+        const safeText = escapeHTML(text);
+
+        if (!searchTerm) return safeText;
         
-        const regex = new RegExp(`(${searchTerm})`, 'gi');
-        return text.replace(regex, '<mark style="background: var(--secondary-color); color: white; padding: 2px 4px; border-radius: 3px;">$1</mark>');
+        // Escape the search term for HTML match
+        const safeSearchTerm = escapeHTML(searchTerm);
+
+        // Escape for Regex (to avoid regex injection)
+        const regexSafeSearchTerm = safeSearchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        const regex = new RegExp(`(${regexSafeSearchTerm})`, 'gi');
+        return safeText.replace(regex, '<mark style="background: var(--secondary-color); color: white; padding: 2px 4px; border-radius: 3px;">$1</mark>');
     }
 
     hasActiveFilters() {
@@ -3272,19 +3295,7 @@ class QRScannerState {
             padding: 20px;
         `;
        
-       // यह फंक्शन टेक्स्ट को HTML में डालने से पहले सुरक्षित बनाता है
-function escapeHTML(str) {
-    str = String(str || '');
-    return str.replace(/[&<>"']/g, function(match) {
-        return {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        }[match];
-    });
-} /*
+       /*
 
       // यह एक उदाहरण है कि आप अपने क्लिक इवेंट में इस कोड को कैसे कॉल करेंगे
 // मान लीजिए आपके पास showScanDetails नाम का एक फंक्शन है
